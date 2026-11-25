@@ -1,0 +1,2 @@
+Para usar a logo oficial, coloque o arquivo aqui (ex.: logo.png) e ajuste logoUrl em js/brand.js.
+A logo oficial nao foi incluida nesta entrega.
