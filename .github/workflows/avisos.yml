@@ -1,7 +1,7 @@
 # Rotina de avisos do Painel de Demandas.
 # Roda quando uma demanda muda (push na branch "dados") e a cada 20 minutos.
 # Decifra os dados com o segredo PAINEL_CHAVE, monta os avisos e abre uma issue no repositório de avisos
-# (o Power Automate lê a issue e manda os e-mails). Os logs só mostram contagens, nunca nomes ou textos.
+# (o Power Automate lê a issue e manda os e-mails e as mensagens do Teams). Também confirma sozinho o que passou do prazo de confirmação. Os logs só mostram contagens, nunca nomes ou textos.
 name: Avisos do painel
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.event.repository.default_branch || 'main' }}
           path: site
       - uses: actions/checkout@v4
         with:
@@ -35,6 +35,7 @@ jobs:
         env:
           PAINEL_CHAVE: ${{ secrets.PAINEL_CHAVE }}
           AVISOS_TOKEN: ${{ secrets.AVISOS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node site/.github/avisos/run.mjs
       - name: Salvar estado dos avisos
         working-directory: dados
@@ -44,8 +45,9 @@ jobs:
           git add avisos/estado.enc
           if git diff --cached --quiet; then exit 0; fi
           git commit -q -m "Avisos: estado"
-          for i in 1 2 3 4; do
+          for i in 1 2 3 4 5; do
             if git push -q; then exit 0; fi
+            sleep $((i * 2))
             git pull -q --rebase
           done
           exit 1
