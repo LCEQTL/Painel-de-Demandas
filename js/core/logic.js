@@ -10,19 +10,53 @@ export const STATUS_ABERTA = "aberta", STATUS_CONFIRMACAO = "aguardando_confirma
 export const OPEN_STATUSES = [STATUS_ABERTA, STATUS_CONFIRMACAO];
 export const STATUS_LABELS = { aberta: "Pendente", aguardando_confirmacao: "Aguardando confirmação", concluida: "Concluída", cancelada: "Cancelada" };
 export const PRIORITIES = ["normal", "alta", "urgente"];
-export const ROLE_LABEL = { colaborador: "Colaborador", gestor: "Gestor", gerente: "Gerente" };
+export const ROLE_LABEL = { colaborador: "Colaborador", lider: "Executivo/Líder", gerente: "Gerente" };
+// "gestor" era o nome antigo de executivo/líder.
+export const normRole = (r) => (r === "gestor" ? "lider" : ROLE_LABEL[r] ? r : "colaborador");
 export const SECTOR_PALETTE = ["#2563eb", "#16a34a", "#ea580c", "#9333ea", "#db2777", "#0891b2", "#a16207", "#475569"];
+
+// Destinatários possíveis de um aviso.
+export const RECIPIENTS = {
+  responsavel: "Responsável", quem_pediu: "Quem pediu", gerente: "Gerente do setor atual", lideres: "Executivos/líderes do setor atual",
+  gerente_origem: "Gerente do setor que pediu", acompanhantes: "Acompanhantes", admin: "Administrador",
+};
+// Regras de aviso. on: ligada; to: destinatários; ch: canais (email, teams); n: número (horas ou dias, conforme a regra).
+export const RULES = [
+  { key: "nova", group: "Na hora", label: "Chegou demanda para a pessoa (nova ou encaminhada)", def: { on: 1, to: ["responsavel"], ch: ["email", "teams"] } },
+  { key: "nova_urgente", group: "Na hora", label: "Chegou demanda urgente ao setor", def: { on: 1, to: ["gerente"], ch: ["email", "teams"] } },
+  { key: "devolvida", group: "Na hora", label: "Devolvida ou reaberta", def: { on: 1, to: ["responsavel"], ch: ["email", "teams"] } },
+  { key: "confirmar", group: "Na hora", label: "Concluída: falta quem pediu confirmar", def: { on: 1, to: ["quem_pediu"], ch: ["email", "teams"] } },
+  { key: "confirmada", group: "Na hora", label: "Conclusão confirmada (ou confirmada automaticamente)", def: { on: 0, to: ["responsavel"], ch: ["teams"] } },
+  { key: "mensagem", group: "Na hora", label: "Nova mensagem na conversa", def: { on: 0, to: ["responsavel", "quem_pediu"], ch: ["teams"] } },
+  { key: "nao_aberta_alta", group: "Lembretes", label: "Prioridade alta ainda não aberta", n: "horas depois", def: { on: 1, n: 4, to: ["responsavel"], ch: ["email", "teams"] } },
+  { key: "nao_aberta_urgente", group: "Lembretes", label: "Urgente ainda não aberta", n: "horas depois", def: { on: 1, n: 2, to: ["responsavel", "gerente"], ch: ["email", "teams"] } },
+  { key: "vence", group: "Prazos", label: "Prazo final vencendo", n: "dia(s) antes, às 8h", def: { on: 1, n: 1, to: ["responsavel", "gerente"], ch: ["email", "teams"] } },
+  { key: "vencida", group: "Prazos", label: "Prazo final venceu (1º dia de atraso)", def: { on: 1, to: ["responsavel", "gerente"], ch: ["email", "teams"] } },
+  { key: "atrasada_dias", group: "Prazos", label: "Continua atrasada", n: "dias de atraso", def: { on: 1, n: 5, to: ["admin", "gerente_origem"], ch: ["email"] } },
+  { key: "etapa_vence", group: "Prazos", label: "Prazo da etapa vencendo", n: "dia(s) antes, às 8h", def: { on: 1, n: 1, to: ["responsavel"], ch: ["email", "teams"] } },
+  { key: "etapa_vencida", group: "Prazos", label: "Prazo da etapa venceu", def: { on: 1, to: ["responsavel", "gerente"], ch: ["email", "teams"] } },
+  { key: "resumo", group: "Resumo", label: "Resumo do dia (atrasadas, vencendo, para confirmar, novas, equipe)", def: { on: 1, to: ["responsavel"], ch: ["email"] } },
+];
+export const DEFAULT_RULES = Object.fromEntries(RULES.map((r) => [r.key, r.def]));
+export function rule(db, key) {
+  const r = ((conf(db, "notifications").rules) || {})[key];
+  return { ...DEFAULT_RULES[key], ...(r || {}) };
+}
+
+export const DEFAULT_ORIGENS = ["Comitê de Clientes", "Comitê de Cobrança", "Reunião com a diretoria", "Superintendência", "Presidente", "ANEEL", "Ouvidoria", "Órgão público"];
 
 export const DEFAULT_CONFIG = {
   deadline_bands: { yellow_max_days_left: 3, orange_max_days_left: 1, red_max_days_late: 3, darkred_max_days_late: 7 },
-  limits: { max_text_chars: 20000, max_table_rows: 500, max_table_cols: 30, max_cell_chars: 1000, max_blocks: 60, max_image_kb: 800, max_images_per_content: 10 },
+  limits: { max_text_chars: 20000, max_table_rows: 500, max_table_cols: 30, max_cell_chars: 1000, max_blocks: 60, max_image_kb: 800, max_images_per_content: 10, max_file_mb: 5, max_files_per_content: 10 },
   notifications: {
-    enabled: 1, test_mode: 1, test_email: "", work_start: 8, work_end: 18, weekdays_only: 1,
-    remind_alta_hours: 4, remind_urgente_hours: 2, escalate_days: 5, digest_hour: 8,
+    enabled: 1, test_mode: 0, test_email: "", work_start: 8, work_end: 18, weekdays_only: 1, digest_hour: 8, urgent_anytime: 1, rules: {},
   },
+  flow: { auto_confirm_hours: 24 },
+  token: { expires: "" },
   presence: { heartbeat_minutes: 15, online_minutes: 20 },
 };
 export function conf(db, key) { return { ...DEFAULT_CONFIG[key], ...((db.config || {})[key] || {}) }; }
+export function origens(db) { const o = (db.config || {}).origens; return Array.isArray(o) ? o : DEFAULT_ORIGENS; }
 
 // ---------------------------------------------------------------- tempo (Piauí: UTC-3, sem horário de verão)
 const OFFSET_MS = 3 * 3600 * 1000;
@@ -69,27 +103,30 @@ export const userRef = (u) => (u ? { id: u.id, name: u.full_name } : null);
 export const uref = (db, id) => userRef(db.users.get(Number(id)));
 
 export function activeMemberships(db, u) {
-  return (u.memberships || []).filter((m) => m.active !== false && (sectorById(db, m.sector_id) || {}).active !== false);
+  return (u.memberships || []).filter((m) => m.active !== false && (sectorById(db, m.sector_id) || {}).active !== false)
+    .map((m) => (m.role === "gestor" ? { ...m, role: "lider" } : m));
 }
 export const memberSectorIds = (db, u) => new Set(activeMemberships(db, u).map((m) => m.sector_id));
-export const managedSectorIds = (db, u) => new Set(activeMemberships(db, u).filter((m) => m.role === "gestor" || m.role === "gerente").map((m) => m.sector_id));
+export const managedSectorIds = (db, u) => new Set(activeMemberships(db, u).filter((m) => m.role === "lider" || m.role === "gerente").map((m) => m.sector_id));
 export const primarySectorIds = (db, u) => new Set(db.sectors.filter((s) => s.active !== false && s.primary_manager_id === u.id).map((s) => s.id));
 export function roleIn(db, u, sectorId) {
   const m = activeMemberships(db, u).find((x) => x.sector_id === Number(sectorId));
   return m ? m.role || "colaborador" : null;
 }
-// Gerentes do setor: recebem as cobranças de atraso. Sem gerente, o gerente principal.
-export function sectorGerentes(db, sectorId) {
-  const out = [...db.users.values()].filter((u) => u.is_active && roleIn(db, u, sectorId) === "gerente");
-  if (out.length) return out;
+// O gerente do setor (um por setor): recebe o que chega sem pessoa definida e as cobranças da equipe.
+export function sectorGerente(db, sectorId) {
   const s = sectorById(db, sectorId);
   const p = s && s.primary_manager_id ? db.users.get(s.primary_manager_id) : null;
-  return p && p.is_active ? [p] : [];
+  if (p && p.is_active) return p;
+  return [...db.users.values()].find((u) => u.is_active && roleIn(db, u, sectorId) === "gerente") || null;
 }
+export function sectorGerentes(db, sectorId) { const g = sectorGerente(db, sectorId); return g ? [g] : []; }
+// Executivos/líderes: delegados do gerente (mesmo acesso ao setor).
+export function sectorLideres(db, sectorId) { return [...db.users.values()].filter((u) => u.is_active && roleIn(db, u, sectorId) === "lider"); }
 
 export function membershipDict(db, u, m) {
   const s = sectorById(db, m.sector_id) || { id: m.sector_id, name: "?", acronym: "?" };
-  const role = m.role || "colaborador";
+  const role = normRole(m.role);
   return { sector_id: s.id, sector_name: s.name, acronym: s.acronym, role, role_label: ROLE_LABEL[role],
     is_manager: role !== "colaborador", is_primary: s.primary_manager_id === u.id, sector_active: s.active !== false };
 }
@@ -213,7 +250,7 @@ export function validateContent(content, limits, where = "Conteúdo", required =
   const blocks = content.blocks || [];
   if (blocks.length > limits.max_blocks) bad(`${where}: muitos blocos (${blocks.length}).`, 422);
   const out = [];
-  let total = 0, nt = 0, ni = 0;
+  let total = 0, nt = 0, ni = 0, nf = 0;
   for (const b of blocks) {
     if (!b || typeof b !== "object") bad(`${where}: bloco inválido.`, 422);
     if (b.t === "text") {
@@ -229,15 +266,40 @@ export function validateContent(content, limits, where = "Conteúdo", required =
       const img = { t: "image", uid: b.uid };
       for (const k of ["w", "h"]) if (Number.isInteger(b[k]) && b[k] > 0 && b[k] <= 10000) img[k] = b[k];
       out.push(img);
+    } else if (b.t === "file") {
+      if (++nf > limits.max_files_per_content) bad(`${where}: no máximo ${limits.max_files_per_content} arquivos.`, 422);
+      out.push(cleanFile(b, where));
     } else bad(`${where}: tipo de bloco não permitido.`, 422);
   }
   if (total > limits.max_text_chars) bad(`${where}: texto total acima do limite.`, 422);
   if (required && !out.length) bad(`${where}: preenchimento obrigatório.`, 422);
   return { v: 1, blocks: out };
 }
+export const FILE_TYPES = {
+  pdf: "application/pdf", doc: "application/msword", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xls: "application/vnd.ms-excel", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xlsm: "application/vnd.ms-excel.sheet.macroEnabled.12",
+  csv: "text/csv", ppt: "application/vnd.ms-powerpoint", pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+};
+export function cleanFile(b, where = "Anexo") {
+  if (!/^[A-Za-z0-9_-]{16,40}$/.test(String(b.uid || ""))) bad(`${where}: arquivo inválido.`, 422);
+  const name = String(b.name || "arquivo").replace(/[\\/:*?"<>|\x00-\x1f]/g, "_").slice(0, 150);
+  const ext = (name.split(".").pop() || "").toLowerCase();
+  if (!FILE_TYPES[ext]) bad(`${where}: tipo de arquivo não aceito (${ext || "sem extensão"}).`, 422);
+  return { t: "file", uid: b.uid, name, size: Math.max(0, Number(b.size) || 0), ext, gz: b.gz ? 1 : 0 };
+}
+// Anexos das janelas (encaminhar, concluir, devolver): imagens e arquivos já enviados.
+export function cleanAttachments(list, limits) {
+  if (!list) return [];
+  if (!Array.isArray(list)) bad("Anexos inválidos.", 422);
+  if (list.length > limits.max_files_per_content) bad(`No máximo ${limits.max_files_per_content} anexos.`, 422);
+  return list.map((b) => {
+    if (b && b.t === "image") { if (!/^[A-Za-z0-9_-]{16,40}$/.test(String(b.uid || ""))) bad("Imagem inválida.", 422); const o = { t: "image", uid: b.uid }; for (const k of ["w", "h"]) if (Number.isInteger(b[k]) && b[k] > 0 && b[k] <= 10000) o[k] = b[k]; return o; }
+    return cleanFile(b || {});
+  });
+}
 export function contentToText(c) {
   if (!c) return "";
-  return (c.blocks || []).map((b) => (b.t === "text" ? b.md : b.t === "image" ? "[Imagem]" : "[Tabela] " + (b.columns || []).map((x) => x.label).join(" | "))).join("\n");
+  return (c.blocks || []).map((b) => (b.t === "text" ? b.md : b.t === "image" ? "[Imagem]" : b.t === "file" ? `[Arquivo] ${b.name}` : "[Tabela] " + (b.columns || []).map((x) => x.label).join(" | "))).join("\n");
 }
 export function preview(c, n = 110) {
   for (const b of (c || {}).blocks || []) {
@@ -275,6 +337,7 @@ export function demandPermissions(db, u, d) {
     view: true, comment: true, transfer: work, complete: work,
     confirm: d.status === STATUS_CONFIRMACAO && (isCreator || !!u.is_admin),
     change_due: pending && (isCreator || mgrDest),
+    stage_due: pending && (isCreator || mgrDest || ((currentPeriod(d) || {}).forwarded_by_id === u.id && !isAssignee)),
     edit_request: pending && (isCreator || mgrOrigin),
     cancel: OPEN_STATUSES.includes(d.status) && (isCreator || mgrOrigin || mgrDest),
     reopen: d.status === STATUS_CONCLUIDA && (isCreator || mgrOrigin || mgrDest),
@@ -308,15 +371,15 @@ export function resolveAssignee(db, sector, userId) {
     if (!memberSectorIds(db, u).has(sector.id)) bad(`${u.full_name} não pertence ao setor ${sector.name}.`);
     return [u, false];
   }
-  if (!sector.primary_manager_id) bad(`O setor ${sector.name} ainda não tem gerente principal. Escolha uma pessoa ou peça ao administrador para definir em Administração › Setores.`, 409);
+  if (!sector.primary_manager_id) bad(`O setor ${sector.name} ainda não tem gerente. Escolha uma pessoa ou peça ao administrador para definir em Administração › Setores.`, 409);
   const u = db.users.get(sector.primary_manager_id);
-  if (!u || !u.is_active || !memberSectorIds(db, u).has(sector.id)) bad(`O gerente principal de ${sector.name} está inativo ou sem vínculo com o setor.`, 409);
+  if (!u || !u.is_active || !memberSectorIds(db, u).has(sector.id)) bad(`O gerente de ${sector.name} está inativo ou sem vínculo com o setor.`, 409);
   return [u, true];
 }
-function openPeriod(d, sectorId, actor, reason, now) {
+function openPeriod(d, sectorId, actor, reason, now, stageDue = null) {
   d.periods = d.periods || [];
-  const p = { id: nextId(d.periods), sector_id: sectorId, started_at: now, ended_at: null, forwarded_by_id: actor.id, reason,
-    arrived_overdue: localDate(now) > d.due_date, due_date_at_entry: d.due_date };
+  const p = { id: nextId(d.periods), sector_id: sectorId, started_at: now, ended_at: null, forwarded_by_id: actor ? actor.id : null, reason,
+    arrived_overdue: localDate(now) > d.due_date, due_date_at_entry: d.due_date, stage_due: stageDue };
   d.periods.push(p);
   return p;
 }
@@ -367,11 +430,30 @@ export function buildDemand(db, actor, data, id, code, now = nowIso()) {
   return d;
 }
 
-export function opTransfer(db, actor, d, { sector_id, user_id, reason, version }, skipPerm = false, now = nowIso()) {
+// Prazo da etapa (opcional): não passa do prazo final, a não ser que o prazo final já esteja vencido ou vencendo (hoje/amanhã).
+export function checkStageDue(d, stageDue, now = nowIso()) {
+  if (!stageDue) return { stage_due: null, beyond: false };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(stageDue)) bad("Prazo da etapa inválido.");
+  const today = todayLocal(now);
+  if (stageDue < today) bad("O prazo da etapa não pode ser anterior a hoje.");
+  const finalTight = daysBetween(today, d.due_date) <= 1;
+  if (stageDue > d.due_date && !finalTight) bad(`O prazo da etapa não pode passar do prazo final (${stageDue.slice(8, 10)}/${stageDue.slice(5, 7)} > ${d.due_date.slice(8, 10)}/${d.due_date.slice(5, 7)}).`);
+  return { stage_due: stageDue, beyond: stageDue > d.due_date };
+}
+export function stageInfo(p, d, now = nowIso()) {
+  if (!p || !p.stage_due) return null;
+  const end = p.ended_at ? localDate(p.ended_at) : todayLocal(now);
+  const left = daysBetween(end, p.stage_due);
+  const done = !!p.ended_at;
+  return { due: p.stage_due, done, on_time: left >= 0, days_left: done ? null : left, days_late: left < 0 ? -left : 0, beyond_final: p.stage_due > d.due_date };
+}
+export function opTransfer(db, actor, d, { sector_id, user_id, reason, version, stage_due, attachments }, skipPerm = false, now = nowIso()) {
   if (!skipPerm) requirePerm(db, actor, d, "transfer", "Você não pode encaminhar esta demanda.");
   if (d.status !== STATUS_ABERTA) bad("Somente demandas pendentes podem ser encaminhadas.");
   checkVersion(d, version);
   reason = text(reason, "Motivo do encaminhamento", true, 2000);
+  const sd = checkStageDue(d, stage_due, now);
+  const files = cleanAttachments(attachments, conf(db, "limits"));
   const sector = sectorById(db, sector_id);
   if (!sector) bad("Setor de destino obrigatório.");
   const [nu, fallback] = resolveAssignee(db, sector, user_id);
@@ -379,16 +461,18 @@ export function opTransfer(db, actor, d, { sector_id, user_id, reason, version }
   const internal = sector.id === d.dest_sector_id;
   const oldSector = sectorById(db, d.dest_sector_id), oldUser = db.users.get(d.assignee_id);
   closeCurrent(d, now, "transferida", !internal);
-  const p = internal ? currentPeriod(d) || openPeriod(d, sector.id, actor, reason, now) : openPeriod(d, sector.id, actor, reason, now);
+  const p = internal ? currentPeriod(d) || openPeriod(d, sector.id, actor, reason, now, sd.stage_due) : openPeriod(d, sector.id, actor, reason, now, sd.stage_due);
+  if (internal && sd.stage_due) p.stage_due = sd.stage_due;
   openAssignment(d, p, nu, actor, internal ? "troca_interna" : "transferencia", reason, now, fallback);
   d.dest_sector_id = sector.id; d.assignee_id = nu.id;
   touch(d, now);
   addEvent(d, "transferida", actor, { from_sector: oldSector ? oldSector.name : "?", to_sector: sector.name, from_user: oldUser ? oldUser.full_name : "?",
-    to_user: nu.full_name, to_user_id: nu.id, reason, internal, fallback_primary: fallback, arrived_overdue: internal ? null : p.arrived_overdue, due_date: d.due_date }, now);
+    to_user: nu.full_name, to_user_id: nu.id, reason, internal, fallback_primary: fallback, arrived_overdue: internal ? null : p.arrived_overdue, due_date: d.due_date,
+    stage_due: sd.stage_due, stage_beyond_final: sd.beyond, files }, now);
   return d;
 }
 export function opChangeDue(db, actor, d, { due_date, justification, version }, now = nowIso()) {
-  requirePerm(db, actor, d, "change_due", "Somente quem criou, o administrador ou gestores do setor responsável podem alterar o prazo.");
+  requirePerm(db, actor, d, "change_due", "Somente quem criou, o administrador ou gerente ou executivos/líderes do setor responsável podem alterar o prazo.");
   checkVersion(d, version);
   const just = text(justification, "Justificativa da alteração de prazo", true, 2000);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(due_date || "")) bad("Prazo inválido.");
@@ -399,8 +483,22 @@ export function opChangeDue(db, actor, d, { due_date, justification, version }, 
   addEvent(d, "prazo_alterado", actor, { old, new: due_date, justification: just }, now);
   return d;
 }
+export function opStageDue(db, actor, d, { stage_due, justification, version }, now = nowIso()) {
+  requirePerm(db, actor, d, "stage_due", "Somente quem encaminhou, quem pediu, o gerente ou executivos/líderes do setor atual podem alterar o prazo da etapa.");
+  checkVersion(d, version);
+  const p = currentPeriod(d);
+  if (!p) bad("A demanda não está em nenhuma etapa.");
+  const just = text(justification, "Justificativa", true, 2000);
+  const sd = stage_due ? checkStageDue(d, stage_due, now) : { stage_due: null, beyond: false };
+  if ((sd.stage_due || null) === (p.stage_due || null)) bad("O prazo da etapa é o mesmo.");
+  const old = p.stage_due || null;
+  p.stage_due = sd.stage_due;
+  touch(d, now);
+  addEvent(d, "prazo_etapa", actor, { old, new: sd.stage_due, justification: just, sector: (sectorById(db, p.sector_id) || {}).name, beyond: sd.beyond }, now);
+  return d;
+}
 export function opEdit(db, actor, d, data, now = nowIso()) {
-  requirePerm(db, actor, d, "edit_request", "Somente quem criou, gestores do setor de origem ou o administrador podem alterar o pedido.");
+  requirePerm(db, actor, d, "edit_request", "Somente quem criou, gerente ou executivos/líderes do setor de origem ou o administrador podem alterar o pedido.");
   checkVersion(d, data.version);
   const changes = {};
   if (data.title !== undefined && data.title !== null) {
@@ -428,17 +526,32 @@ export function opEdit(db, actor, d, data, now = nowIso()) {
   addEvent(d, "pedido_alterado", actor, changes, now);
   return d;
 }
-export function opComplete(db, actor, d, { resolution }, now = nowIso()) {
-  requirePerm(db, actor, d, "complete", "Somente o responsável, gestores do setor responsável ou o administrador podem concluir.");
+export function opComplete(db, actor, d, { resolution, attachments }, now = nowIso()) {
+  requirePerm(db, actor, d, "complete", "Somente o responsável, gerente ou executivos/líderes do setor responsável ou o administrador podem concluir.");
   const res = text(resolution, "Descrição da solução", true, 8000);
+  const files = cleanAttachments(attachments, conf(db, "limits"));
   closeCurrent(d, now, "concluida", true);
   const onTime = localDate(now) <= d.due_date;
   d.resolution = res; d.resolved_at = now; d.resolved_by_id = actor.id;
   const direct = actor.id === d.creator_id || d.creator_id === d.assignee_id;
   if (direct) { d.status = STATUS_CONCLUIDA; d.completed_at = now; } else d.status = STATUS_CONFIRMACAO;
   touch(d, now);
-  addEvent(d, direct ? "concluida" : "resolvida", actor, { resolution: res, due_date: d.due_date, original_due_date: d.original_due_date, on_time: onTime }, now);
+  d.resolution_files = files;
+  addEvent(d, direct ? "concluida" : "resolvida", actor, { resolution: res, due_date: d.due_date, original_due_date: d.original_due_date, on_time: onTime, files }, now);
   return d;
+}
+// Confirmação automática (rotina de avisos): ninguém confirmou nem devolveu no tempo configurado.
+export function opAutoConfirm(db, d, hours, now = nowIso()) {
+  if (d.status !== STATUS_CONFIRMACAO) return null;
+  d.status = STATUS_CONCLUIDA; d.completed_at = now;
+  touch(d, now);
+  addEvent(d, "conclusao_confirmada", null, { resolution: d.resolution, auto: true, hours }, now);
+  return d;
+}
+export function autoConfirmAt(db, d) {
+  const h = Number(conf(db, "flow").auto_confirm_hours) || 0;
+  if (!h || d.status !== STATUS_CONFIRMACAO || !d.resolved_at) return null;
+  return new Date(new Date(d.resolved_at).getTime() + h * 3600000).toISOString();
 }
 export function opConfirm(db, actor, d, _b, now = nowIso()) {
   requirePerm(db, actor, d, "confirm", "Somente quem criou a demanda (ou o administrador) confirma a conclusão.");
@@ -455,28 +568,29 @@ function restart(db, actor, d, why, label, now) {
     try { [assignee, fallback] = resolveAssignee(db, sector, d.assignee_id); }
     catch (__) { [assignee, fallback] = resolveAssignee(db, sector, null); }
   }
-  d.status = STATUS_ABERTA; d.completed_at = null; d.resolved_at = null; d.resolved_by_id = null; d.resolution = null;
+  d.status = STATUS_ABERTA; d.completed_at = null; d.resolved_at = null; d.resolved_by_id = null; d.resolution = null; d.resolution_files = [];
   d.assignee_id = assignee.id;
   const p = openPeriod(d, sector.id, actor, `${label}: ${why}`, now);
   openAssignment(d, p, assignee, actor, "reabertura", why, now, fallback);
   touch(d, now);
 }
-export function opSendBack(db, actor, d, { reason }, now = nowIso()) {
+export function opSendBack(db, actor, d, { reason, attachments }, now = nowIso()) {
   requirePerm(db, actor, d, "confirm", "Somente quem criou a demanda (ou o administrador) pode devolver.");
   const why = text(reason, "Motivo da devolução", true, 4000);
-  addEvent(d, "devolvida", actor, { reason: why, previous_resolution: d.resolution }, now);
+  const files = cleanAttachments(attachments, conf(db, "limits"));
+  addEvent(d, "devolvida", actor, { reason: why, previous_resolution: d.resolution, files }, now);
   restart(db, actor, d, why, "Devolvida", now);
   return d;
 }
 export function opReopen(db, actor, d, { reason }, now = nowIso()) {
-  requirePerm(db, actor, d, "reopen", "Somente quem criou, gestores envolvidos ou o administrador podem reabrir.");
+  requirePerm(db, actor, d, "reopen", "Somente quem criou, gerentes ou executivos/líderes envolvidos ou o administrador podem reabrir.");
   const why = text(reason, "Motivo da reabertura", true, 4000);
   addEvent(d, "reaberta", actor, { reason: why, previous_resolution: d.resolution, previous_completed_at: d.completed_at }, now);
   restart(db, actor, d, why, "Reabertura", now);
   return d;
 }
 export function opCancel(db, actor, d, { reason }, now = nowIso()) {
-  requirePerm(db, actor, d, "cancel", "Somente quem criou, gestores envolvidos ou o administrador podem cancelar.");
+  requirePerm(db, actor, d, "cancel", "Somente quem criou, gerentes ou executivos/líderes envolvidos ou o administrador podem cancelar.");
   const why = text(reason, "Justificativa do cancelamento", true, 4000);
   closeCurrent(d, now, "cancelada", true);
   const old = d.status;
@@ -568,6 +682,7 @@ export function demandSummary(db, d, u, extra = {}) {
     deadline: deadlineInfo(d.due_date, d.status, bands), priority: d.priority, status: d.status, status_label: STATUS_LABELS[d.status],
     created_at: localIso(d.created_at), updated_at: localIso(d.updated_at), completed_at: localIso(d.completed_at),
     context_label: contextLabel(db, d, u), request_source: d.request_source, conclusion: conclusion(d), resolved_at: localIso(d.resolved_at),
+    stage: d.status === STATUS_ABERTA ? stageInfo(currentPeriod(d), d) : null,
     ...extra,
   };
 }
@@ -580,7 +695,7 @@ export function timeline(db, d, now = nowIso()) {
     t.seconds += secs; t.periods++; totals.set(p.sector_id, t);
     return {
       id: p.id, sector: sectorRef(s), started_at: localIso(p.started_at), ended_at: localIso(p.ended_at), seconds: secs, duration: fmtDuration(secs),
-      current: !p.ended_at, forwarded_by: uref(db, p.forwarded_by_id), reason: p.reason, arrived_overdue: p.arrived_overdue,
+      current: !p.ended_at, forwarded_by: uref(db, p.forwarded_by_id), reason: p.reason, arrived_overdue: p.arrived_overdue, stage: stageInfo(p, d, now),
       assignments: (d.assignments || []).filter((a) => a.period_id === p.id).map((a) => ({
         id: a.id, user: uref(db, a.user_id), kind: a.kind, started_at: localIso(a.started_at), ended_at: localIso(a.ended_at),
         duration: fmtDuration(secondsBetween(a.started_at, a.ended_at || now)), assigned_by: uref(db, a.assigned_by_id), reason: a.reason,

@@ -1,7 +1,7 @@
 // Conteúdo rico seguro: texto com formatação simples + tabelas estruturadas.
 // Renderização por DOM (textContent); nenhum HTML do usuário é interpretado.
-import { h, clear, icon, fmtDate, fmtNumber, modal, toast, select } from "./ui.js";
-import { api, imageObjectUrl } from "./api.js";
+import { h, clear, icon, fmtDate, fmtNumber, fmtBytes, modal, toast, select } from "./ui.js";
+import { api, imageObjectUrl, fileBytes, saveFile } from "./api.js";
 
 export const COL_TYPES = [
   { value: "text", label: "Texto" }, { value: "number", label: "Número" }, { value: "currency", label: "Moeda" },
@@ -121,9 +121,31 @@ export function renderImage(b) {
   return img;
 }
 
+// Arquivo anexado (PDF, Word, Excel...): cartão com ícone, nome e tamanho; clique para baixar.
+const FILE_KIND = { pdf: ["PDF", "f-pdf"], doc: ["DOC", "f-doc"], docx: ["DOC", "f-doc"], xls: ["XLS", "f-xls"], xlsx: ["XLS", "f-xls"], xlsm: ["XLS", "f-xls"], csv: ["CSV", "f-xls"], ppt: ["PPT", "f-ppt"], pptx: ["PPT", "f-ppt"] };
+export function renderFile(b, { onRemove } = {}) {
+  const [lbl, cls] = FILE_KIND[b.ext] || ["ARQ", "f-doc"];
+  const card = h("button", { type: "button", class: "filecard", title: `Baixar ${b.name}` },
+    h("span", { class: "fico " + cls }, lbl), h("span", { class: "fmeta" }, h("span", { class: "fname" }, b.name), h("span", { class: "fsize" }, `${fmtBytes(b.size)} · clique para baixar`)));
+  card.addEventListener("click", async () => {
+    card.classList.add("loading");
+    try { saveFile(b.name, await fileBytes(b)); } catch (e) { toast("Não foi possível baixar o arquivo: " + e.message, "err"); }
+    card.classList.remove("loading");
+  });
+  if (!onRemove) return card;
+  return h("span", { class: "filewrap" }, card, h("button", { type: "button", class: "fx", "aria-label": "Remover " + b.name, onclick: onRemove }, "×"));
+}
+export function renderAttachments(list) {
+  if (!list || !list.length) return null;
+  return h("div", { class: "attlist" }, list.map((b) => (b.t === "image" ? renderImage(b) : renderFile(b))));
+}
+
 export function renderContent(content) {
   const root = h("div", { class: "rich" });
+  let files = null;
   for (const b of (content && content.blocks) || []) {
+    if (b.t === "file") { if (!files) { files = h("div", { class: "attlist" }); root.appendChild(files); } files.appendChild(renderFile(b)); continue; }
+    files = null;
     if (b.t === "text") root.appendChild(renderText(b.md));
     else if (b.t === "table") root.appendChild(renderTable(b));
     else if (b.t === "image") root.appendChild(renderImage(b));
@@ -157,6 +179,80 @@ export async function uploadImage(file) {
   const { blob, w, h: hh } = await compressImage(file);
   const r = await api.upload("/api/images", blob);
   return { t: "image", uid: r.uid, w, h: hh };
+}
+
+// ---------------------------------------------------------------- arquivos: PDF, Word, Excel, PowerPoint e imagens
+export const MAX_FILE_MB = 5;
+export const DOC_EXT = ["pdf", "doc", "docx", "xls", "xlsx", "xlsm", "csv", "ppt", "pptx"];
+export const ACCEPT = "image/*,.pdf,.doc,.docx,.xls,.xlsx,.xlsm,.csv,.ppt,.pptx";
+const isImage = (f) => /^image\/(jpeg|png|webp|gif|bmp)$/.test(f.type);
+const extOf = (name) => (String(name).split(".").pop() || "").toLowerCase();
+export function bigFileMessage(name, size) {
+  return `“${name}” tem ${fmtBytes(size)}; o limite é ${MAX_FILE_MB} MB. Para arquivos grandes, salve no SharePoint/OneDrive e cole o link na conversa.`;
+}
+async function gzipBlob(file) {
+  if (typeof CompressionStream === "undefined") return null;
+  try { return await new Response(file.stream().pipeThrough(new CompressionStream("gzip"))).blob(); } catch (_) { return null; }
+}
+export async function uploadFile(file) {
+  const ext = extOf(file.name);
+  if (!DOC_EXT.includes(ext)) throw new Error(`“${file.name}”: tipo não aceito. Envie imagem, PDF, Word, Excel ou PowerPoint.`);
+  let body = file, gz = false;
+  const z = await gzipBlob(file);
+  if (z && z.size < file.size * 0.9) { body = z; gz = true; } // comprime quando compensa (PDF, CSV, DOC antigos)
+  if (body.size > MAX_FILE_MB * 1024 * 1024) throw new Error(bigFileMessage(file.name, file.size));
+  const r = await api.upload(`/api/files?name=${encodeURIComponent(file.name)}&size=${file.size}&gz=${gz ? 1 : 0}`, body);
+  return r;
+}
+// Imagem → comprimida; documento → arquivo. Devolve o bloco para guardar.
+export async function uploadAny(file) {
+  if (isImage(file)) return uploadImage(file);
+  return uploadFile(file);
+}
+export function isAcceptedFile(f) { return isImage(f) || DOC_EXT.includes(extOf(f.name)); }
+
+// Anexos de uma janela (encaminhar, concluir, devolver): botão, colar print (Ctrl+V) e arrastar.
+export function attachmentsPicker({ hint = "Prints, PDF, Word ou Excel (até 5 MB cada)." } = {}) {
+  const items = []; // {blk} ou {loading}
+  const list = h("div", { class: "attlist" });
+  const fileInput = h("input", { type: "file", accept: ACCEPT, multiple: true, class: "hidden", onchange: (e) => { addFiles(Array.from(e.target.files)); e.target.value = ""; } });
+  const render = () => {
+    clear(list);
+    for (const it of items) {
+      if (it.loading) list.appendChild(h("span", { class: "filecard loading" }, h("span", { class: "loader" }), h("span", { class: "fmeta" }, h("span", { class: "fname" }, it.name), h("span", { class: "fsize" }, "Enviando…"))));
+      else if (it.blk.t === "image") list.appendChild(h("span", { class: "filewrap" }, renderImage(it.blk), h("button", { type: "button", class: "fx", "aria-label": "Remover imagem", onclick: () => { items.splice(items.indexOf(it), 1); render(); } }, "×")));
+      else list.appendChild(renderFile(it.blk, { onRemove: () => { items.splice(items.indexOf(it), 1); render(); } }));
+    }
+  };
+  const addFiles = async (files) => {
+    for (const f of files) {
+      if (!isAcceptedFile(f)) { toast(`“${f.name}”: tipo não aceito. Envie imagem, PDF, Word ou Excel.`, "err"); continue; }
+      if (!isImage(f) && f.size > MAX_FILE_MB * 1024 * 1024 * 3) { toast(bigFileMessage(f.name, f.size), "err"); continue; }
+      const it = { loading: true, name: f.name || "print" };
+      items.push(it); render();
+      try { it.blk = await uploadAny(f); it.loading = false; }
+      catch (e) { items.splice(items.indexOf(it), 1); toast(e.message, "err"); }
+      render();
+    }
+  };
+  const drop = h("div", { class: "dropzone", tabindex: "0", role: "button", onclick: () => fileInput.click(), onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } } },
+    icon("clip", 16), h("span", null, h("b", null, "Anexar"), " · clique, arraste ou cole um print (Ctrl+V)"), h("span", { class: "small muted" }, hint));
+  drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+  drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); addFiles(Array.from(e.dataTransfer.files || [])); });
+  const el = h("div", { class: "attpicker" }, drop, list, fileInput);
+  return {
+    el,
+    // cole em qualquer lugar da janela (menos campos de texto com texto)
+    bindPaste(scope) {
+      scope.addEventListener("paste", (e) => {
+        const files = Array.from(e.clipboardData.items || []).filter((i) => i.kind === "file").map((i) => i.getAsFile()).filter(Boolean);
+        if (files.length) { e.preventDefault(); addFiles(files); }
+      });
+    },
+    get value() { return items.filter((i) => !i.loading).map((i) => i.blk); },
+    isUploading: () => items.some((i) => i.loading),
+  };
 }
 
 // ---------------------------------------------------------------- colar do Excel
@@ -319,7 +415,7 @@ export function createEditor({ initial = null, placeholder = "Escreva aqui…", 
       e.preventDefault();
       const cd = e.clipboardData;
       const files = Array.from(cd.items || []).filter((i) => i.kind === "file").map((i) => i.getAsFile()).filter(Boolean);
-      if (files.length) { addImages(files, seg); return; }
+      if (files.length) { addFiles(files, seg); return; }
       const txt = cd.getData("text/plain");
       if (looksLikeCells(txt)) {
         addTable(rowsToTable(parseTSV(txt), true), seg, true);
@@ -331,7 +427,7 @@ export function createEditor({ initial = null, placeholder = "Escreva aqui…", 
     });
     rt.addEventListener("drop", (e) => {
       e.preventDefault();
-      if (e.dataTransfer.files && e.dataTransfer.files.length) { addImages(Array.from(e.dataTransfer.files), seg); return; }
+      if (e.dataTransfer.files && e.dataTransfer.files.length) { addFiles(Array.from(e.dataTransfer.files), seg); return; }
       const t = e.dataTransfer.getData("text/plain");
       if (t) { rt.focus(); insertPlainText(t); }
     });
@@ -370,15 +466,23 @@ export function createEditor({ initial = null, placeholder = "Escreva aqui…", 
     if (segs[segs.length - 1] === seg) addText("", seg);
     return seg;
   };
-  const addImages = async (files, after) => {
+  const addFileSeg = (blk, after) => {
+    const seg = { type: "file", data: blk };
+    seg.el = h("div", { class: "seg seg-file" }, renderFile(blk, { onRemove: () => { remove(seg); changed(); } }));
+    insert(seg, after);
+    if (segs[segs.length - 1] === seg) addText("", seg);
+    return seg;
+  };
+  const addFiles = async (files, after) => {
     for (const f of files) {
-      if (!/^image\/(jpeg|png|webp|gif|bmp)$/.test(f.type)) { toast("Só imagens podem ser anexadas (JPEG, PNG ou WebP).", "err"); continue; }
-      const ph = { type: "loading", el: h("div", { class: "seg small muted" }, h("span", { class: "loader" }), "Comprimindo e enviando imagem…") };
+      if (!isAcceptedFile(f)) { toast(`“${f.name}”: tipo não aceito. Envie imagem, PDF, Word, Excel ou PowerPoint.`, "err"); continue; }
+      const img = isImage(f);
+      const ph = { type: "loading", el: h("div", { class: "seg small muted" }, h("span", { class: "loader" }), img ? "Comprimindo e enviando imagem…" : `Enviando ${f.name}…`) };
       insert(ph, after);
       try {
-        const blk = await uploadImage(f);
+        const blk = await uploadAny(f);
         const i = segs.indexOf(ph); segs.splice(i, 1); ph.el.remove();
-        after = addImageSeg(blk, i > 0 ? segs[i - 1] : null);
+        after = (img ? addImageSeg : addFileSeg)(blk, i > 0 ? segs[i - 1] : null);
         changed();
       } catch (e) {
         const i = segs.indexOf(ph); if (i >= 0) { segs.splice(i, 1); ph.el.remove(); }
@@ -386,7 +490,7 @@ export function createEditor({ initial = null, placeholder = "Escreva aqui…", 
       }
     }
   };
-  const fileInput = h("input", { type: "file", accept: "image/*", multiple: true, class: "hidden", onchange: (e) => { addImages(Array.from(e.target.files), currentSeg()); e.target.value = ""; } });
+  const fileInput = h("input", { type: "file", accept: ACCEPT, multiple: true, class: "hidden", onchange: (e) => { addFiles(Array.from(e.target.files), currentSeg()); e.target.value = ""; } });
   const insert = (seg, after) => {
     const idx = after ? segs.indexOf(after) + 1 : segs.length;
     segs.splice(idx, 0, seg);
@@ -426,7 +530,7 @@ export function createEditor({ initial = null, placeholder = "Escreva aqui…", 
     tb("1. Lista", "Lista numerada", () => exec("insertOrderedList")),
     tb([icon("link", 14), "Link"], "Inserir link", link));
   const tools = h("div", { class: "tools" },
-    tb([icon("image", 14), "Imagem"], "Anexar imagem (é comprimida automaticamente)", () => fileInput.click()),
+    tb([icon("clip", 14), "Anexar"], "Anexar imagem, PDF, Word ou Excel (até 5 MB; imagens são comprimidas)", () => fileInput.click()),
     tb([icon("table", 14), "Tabela"], "Inserir tabela", () => { addTable(null, currentSeg(), true); changed(); }),
     h("span", { class: "sep" }), fmtBox);
   const root = h("div", { class: "editor" }, area, tools, fileInput);
@@ -437,6 +541,7 @@ export function createEditor({ initial = null, placeholder = "Escreva aqui…", 
     for (const b of bl) {
       if (b.t === "text") addText(b.md);
       else if (b.t === "image") addImageSeg(b, segs[segs.length - 1] || null);
+      else if (b.t === "file") addFileSeg(b, segs[segs.length - 1] || null);
       else if (b.t === "table") {
         const tbl = { ...b };
         delete tbl.t;
@@ -460,7 +565,7 @@ export function createEditor({ initial = null, placeholder = "Escreva aqui…", 
       const out = [];
       for (const sg of segs) {
         if (sg.type === "text") { const md = domToMd(sg.rt); if (md) out.push({ t: "text", md }); }
-        else if (sg.type === "image") out.push(sg.data);
+        else if (sg.type === "image" || sg.type === "file") out.push(sg.data);
         else if (sg.type === "loading") continue;
         else {
           const data = sg.editor ? sg.editor.value : sg.data;

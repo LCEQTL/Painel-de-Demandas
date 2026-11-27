@@ -31,12 +31,13 @@ export function createServer(store, appCfg) {
   // ---------------------------------------------------------------- gravações
   const users = () => [...db.users.values()];
   function mutateUsers(fn, msg) {
-    return store.mutate(P.pessoas, (list) => { list = list || []; const r = fn(list); return r === undefined ? undefined : list; }, msg || "Atualiza pessoas");
+    // fn altera a lista no lugar; devolver false significa "nada mudou, não grave".
+    return store.mutate(P.pessoas, (list) => { list = list || []; return fn(list) === false ? undefined : list; }, msg || "Atualiza pessoas");
   }
   function mutateUser(id, fn, msg) {
     return mutateUsers((list) => { const u = list.find((x) => x.id === Number(id)); if (!u) bad("Pessoa não encontrada.", 404); return fn(u, list); }, msg);
   }
-  function mutateSectors(fn, msg) { return store.mutate(P.setores, (list) => { list = list || []; const r = fn(list); return r === undefined ? undefined : list; }, msg || "Atualiza setores"); }
+  function mutateSectors(fn, msg) { return store.mutate(P.setores, (list) => { list = list || []; return fn(list) === false ? undefined : list; }, msg || "Atualiza setores"); }
   async function mutateDemand(id, fn, msg) {
     const out = await store.mutate(P.demanda(id), (d) => { if (!d) bad("Demanda não encontrada.", 404); return fn(d); }, msg || `Demanda ${id}`);
     return out;
@@ -50,6 +51,14 @@ export function createServer(store, appCfg) {
       return c;
     }, `Contador ${name}`);
     return [value, extra];
+  }
+
+  // Antes de mostrar uma demanda ou lista, pergunta ao GitHub se algo mudou (consulta com ETag: "nada mudou" não gasta cota).
+  let lastFresh = 0;
+  async function fresh(minMs = 4000) {
+    if (Date.now() - lastFresh < minMs) return;
+    lastFresh = Date.now();
+    try { if (await store.sync() && typeof window !== "undefined") window.dispatchEvent(new CustomEvent("painel:dados")); } catch (e) { console.warn("Sincronização:", e.message); }
   }
 
   // ---------------------------------------------------------------- leitura / visto
@@ -131,7 +140,8 @@ export function createServer(store, appCfg) {
       permissions: L.demandPermissions(db, u, d), timeline: L.timeline(db, d),
       messages: msgs.sort((a, b) => (a.created_at < b.created_at ? -1 : 1)).map((m) => ({ id: m.id, author: L.uref(db, m.author_id) || { id: m.author_id, name: "?" }, kind: "mensagem", content: m.content, created_at: L.localIso(m.created_at) })),
       events: (d.events || []).map((e) => ({ id: e.id, type: e.type, actor: L.uref(db, e.actor_id), at: L.localIso(e.at), data: e.data })),
-      tables: (d.tables || []).map((t) => L.tableDict(db, t)), resolved_by: L.uref(db, d.resolved_by_id),
+      tables: (d.tables || []).map((t) => L.tableDict(db, t)), resolved_by: L.uref(db, d.resolved_by_id), resolution_files: d.resolution_files || [],
+      auto_confirm_at: L.localIso(L.autoConfirmAt(db, d)), current_period: (() => { const cp = L.currentPeriod(d); return cp ? { forwarded_by: L.uref(db, cp.forwarded_by_id), sector: L.sectorRef(L.sectorById(db, cp.sector_id)) } : null; })(),
       seen: lastA ? { user: L.uref(db, lastA.user_id), sent_at: L.localIso(lastA.started_at), seen_at: L.localIso(lastA.viewed_at) } : null,
     });
     return out;
@@ -145,7 +155,7 @@ export function createServer(store, appCfg) {
   // ---------------------------------------------------------------- pessoas
   function sectorRoles(u) {
     return L.activeMemberships(db, u).map((m) => { const s = L.sectorById(db, m.sector_id); const role = m.role || "colaborador";
-      return { id: s.id, name: s.name, acronym: s.acronym, color: s.color, role: s.primary_manager_id === u.id ? "Gerente principal" : L.ROLE_LABEL[role] }; });
+      return { id: s.id, name: s.name, acronym: s.acronym, color: s.color, role: s.primary_manager_id === u.id ? "Gerente do setor" : L.ROLE_LABEL[role] }; });
   }
   function newUser(list, { username, full_name, password, phone_corp, phone_personal, email, sector_roles, is_admin = false, must_change_password = false, created_by = null }, pwdRec) {
     username = L.normalizeUsername(username);
@@ -182,7 +192,7 @@ export function createServer(store, appCfg) {
       bad(`${target.full_name} é responsável por ${pending.length} demanda(s) aberta(s) em ${sector.name}. Escolha para quem redistribuir antes de remover o vínculo.`, 409,
         { message: `${target.full_name} é responsável por ${pending.length} demanda(s) aberta(s) em ${sector.name}. Escolha para quem redistribuir antes de remover o vínculo.`, demands: pending.map((d) => ({ id: d.id, code: d.code, title: d.title })) });
     }
-    if (sector.primary_manager_id === target.id && pending.length && strategy !== "user") bad("Esta pessoa é a gerente principal do setor. Defina outro gerente principal ou escolha uma pessoa para receber as demandas.");
+    if (sector.primary_manager_id === target.id && pending.length && strategy !== "user") bad("Esta pessoa é a gerente do setor do setor. Defina outro gerente do setor ou escolha uma pessoa para receber as demandas.");
     await mutateUser(target.id, (u) => { u.memberships = (u.memberships || []).filter((m) => m.sector_id !== sector.id); return u; }, "Remove vínculo");
     if (sector.primary_manager_id === target.id) await mutateSectors((list) => { const s = list.find((x) => x.id === sector.id); s.primary_manager_id = null; return list; });
     if (pending.length) await redistribute(actor, pending, strategy, targetUserId, `Redistribuição: vínculo de ${target.full_name} com ${sector.name} removido`);
@@ -192,7 +202,7 @@ export function createServer(store, appCfg) {
   function dashScope(u) {
     if (u.is_admin) return () => true;
     const managed = L.managedSectorIds(db, u);
-    if (!managed.size) bad("O painel gerencial é destinado a gestores e ao administrador.", 403);
+    if (!managed.size) bad("O painel gerencial é destinado a gerentes, executivos/líderes e ao administrador.", 403);
     return (d) => managed.has(d.origin_sector_id) || managed.has(d.dest_sector_id) || (d.periods || []).some((p) => managed.has(p.sector_id));
   }
   function dashFilters(q) {
@@ -241,6 +251,10 @@ export function createServer(store, appCfg) {
     const out = L.userFull(db, u);
     out.roles = { is_admin: !!u.is_admin, is_manager: L.managedSectorIds(db, u).size > 0, managed_sector_ids: [...L.managedSectorIds(db, u)], primary_sector_ids: [...L.primarySectorIds(db, u)] };
     out.app_url = appCfg.appUrl;
+    if (u.is_admin) {
+      const raw = cfgKey("token").expires || (store.gh.tokenExpiry ? String(store.gh.tokenExpiry).slice(0, 10) : "");
+      out.token_expires = /^\d{4}-\d{2}-\d{2}/.test(raw) ? raw.slice(0, 10) : null;
+    }
     return out;
   });
   on("POST", "/api/auth/login", async (_, b) => {
@@ -304,7 +318,7 @@ export function createServer(store, appCfg) {
   on("GET", "/api/presence", () => {
     const u = me();
     const managed = u.is_admin ? null : L.managedSectorIds(db, u);
-    if (!u.is_admin && !managed.size) bad("Disponível para gestores e administrador.", 403);
+    if (!u.is_admin && !managed.size) bad("Disponível para gerentes, executivos/líderes e administrador.", 403);
     const people = users().filter((x) => x.is_active && x.id !== u.id && (u.is_admin || [...L.memberSectorIds(db, x)].some((s) => managed.has(s))));
     return { online_window_minutes: cfgKey("presence").online_minutes, people: people.sort((a, b) => a.full_name.localeCompare(b.full_name)).map((x) => ({
       name: x.full_name, online: isOnline(x.id), last_login_at: L.localIso((db.presence.get(x.id) || {}).login), last_activity_at: L.localIso((db.presence.get(x.id) || {}).at),
@@ -374,7 +388,7 @@ export function createServer(store, appCfg) {
     if (!s || !target) bad("Vínculo não encontrado.", 404);
     if (!u.is_admin) {
       if (!L.managedSectorIds(db, u).has(s.id)) bad("Você só pode remover vínculos dos setores que gerencia.", 403);
-      if (L.roleIn(db, target, s.id) !== "colaborador") bad("Somente o administrador remove gestores e gerentes.", 403);
+      if (L.roleIn(db, target, s.id) !== "colaborador") bad("Somente o administrador tira o perfil de gerente ou executivo/líder.", 403);
     }
     await removeMembership(u, target, s, b.strategy, b.target_user_id);
     return { ok: true };
@@ -388,7 +402,8 @@ export function createServer(store, appCfg) {
   });
 
   // --- demandas
-  on("GET", "/api/demands", (q) => {
+  on("GET", "/api/demands", async (q) => {
+    await fresh();
     const u = me();
     let quick = q.quick === undefined ? "pendentes" : q.quick;
     const list = baseList(u, q).filter(quickFilter(quick, L.todayLocal()));
@@ -407,7 +422,8 @@ export function createServer(store, appCfg) {
       + [...db.demands.values()].filter((d) => d.creator_id === u.id && d.status === L.STATUS_CONFIRMACAO).length;
     return { quick, attention };
   });
-  on("GET", "/api/demands/home", () => {
+  on("GET", "/api/demands/home", async () => {
+    await fresh();
     const u = me();
     const vis = visible(u), today = L.todayLocal();
     const summary = { pendentes: vis.filter((d) => d.status === L.STATUS_ABERTA).length, fora_prazo: vis.filter((d) => d.status === L.STATUS_ABERTA && d.due_date < today).length,
@@ -428,6 +444,7 @@ export function createServer(store, appCfg) {
     return { id, code };
   });
   on("GET", "/api/demands/:id", async (q, b, p) => {
+    await fresh(q.poll ? 4000 : 0);
     const u = me();
     const d = loadDemand(u, p.id);
     const a = L.currentAssignment(d);
@@ -447,6 +464,7 @@ export function createServer(store, appCfg) {
   on("PATCH", "/api/demands/:id", op(L.opEdit, "Edita demanda"));
   on("POST", "/api/demands/:id/transfer", op((db_, u, d, b) => L.opTransfer(db_, u, d, b), "Encaminha demanda"));
   on("POST", "/api/demands/:id/due-date", op(L.opChangeDue, "Altera prazo"));
+  on("POST", "/api/demands/:id/stage-due", op(L.opStageDue, "Altera prazo da etapa"));
   on("POST", "/api/demands/:id/complete", op(L.opComplete, "Conclui demanda"));
   on("POST", "/api/demands/:id/confirm", op(L.opConfirm, "Confirma conclusão"));
   on("POST", "/api/demands/:id/send-back", op(L.opSendBack, "Devolve demanda"));
@@ -500,6 +518,103 @@ export function createServer(store, appCfg) {
     return { uid, size_bytes: bytes.length };
   });
 
+  // --- arquivos (PDF, Word, Excel...): até o limite configurado; o navegador comprime com gzip quando compensa
+  on("POST", "/api/files", async (q, blob) => {
+    me();
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const meta = L.cleanFile({ uid: "x".repeat(24), name: q.name, size: Number(q.size), gz: q.gz === "1" }, "Arquivo");
+    const lim = cfgKey("limits").max_file_mb * 1024 * 1024;
+    if (!bytes.length) bad("Arquivo vazio.");
+    if (bytes.length > lim) bad(`Arquivo acima de ${cfgKey("limits").max_file_mb} MB. Compartilhe o link do SharePoint/OneDrive na conversa.`, 413);
+    const uid = randomId(24);
+    await store.putBinary(P.anexo(uid), bytes, "Anexo");
+    return { ...meta, uid };
+  });
+
+  // --- origens do pedido ("Pedido feito em / por"): lista mantida pelo administrador; também aceita texto livre
+  on("GET", "/api/origens", () => {
+    const u = me();
+    const list = L.origens(db);
+    const out = { origens: list };
+    if (u.is_admin) {
+      const count = new Map();
+      for (const d of db.demands.values()) if (d.request_source) count.set(d.request_source, (count.get(d.request_source) || 0) + 1);
+      const norm = (x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+      const known = new Set(list.map(norm));
+      out.uso = list.map((o) => ({ origem: o, demandas: count.get(o) || 0 }));
+      out.livres = [...count].filter(([o]) => !known.has(norm(o))).sort((a, b) => b[1] - a[1]).slice(0, 30).map(([origem, demandas]) => ({ origem, demandas }));
+    }
+    return out;
+  });
+  on("PUT", "/api/admin/origens", async (q, b) => {
+    requireAdmin(me());
+    const seen = new Set();
+    const clean = (b.origens || []).map((x) => L.text(x, "Origem", false, 120)).filter((x) => x && !seen.has(x.toLowerCase()) && seen.add(x.toLowerCase()));
+    if (clean.length > 200) bad("No máximo 200 origens.");
+    await store.mutate(P.config, (c) => ({ ...(c || {}), origens: clean }), "Origens do pedido");
+    return { origens: clean };
+  });
+  on("PUT", "/api/admin/regras", async (q, b) => {
+    requireAdmin(me());
+    const rules = {};
+    for (const r of L.RULES) {
+      const v = (b.rules || {})[r.key];
+      if (!v) continue;
+      const to = (v.to || []).filter((x) => L.RECIPIENTS[x]);
+      const ch = (v.ch || []).filter((x) => ["email", "teams"].includes(x));
+      const o = { on: v.on ? 1 : 0, to, ch };
+      if (r.n) { const n = Number(v.n); if (!Number.isFinite(n) || n < 0 || n > 999) bad(`Número inválido em “${r.label}”.`); o.n = n; }
+      if (o.on && !to.length && r.key !== "resumo") bad(`Escolha ao menos um destinatário em “${r.label}”.`);
+      if (o.on && !ch.length) bad(`Escolha ao menos um canal em “${r.label}”.`);
+      rules[r.key] = o;
+    }
+    await store.mutate(P.config, (c) => { c = c || {}; return { ...c, notifications: { ...L.DEFAULT_CONFIG.notifications, ...(c.notifications || {}), rules } }; }, "Regras de aviso");
+    return { rules };
+  });
+
+  // --- demandas do setor (para gerentes e executivos/líderes; serve de ata das reuniões)
+  on("GET", "/api/setor/demandas", async (q) => {
+    await fresh();
+    const u = me();
+    const allowed = u.is_admin ? new Set(db.sectors.map((s) => s.id)) : L.managedSectorIds(db, u);
+    if (!allowed.size) bad("Disponível para gerentes, executivos/líderes e administrador.", 403);
+    const sid = Number(q.sector_id) || [...allowed][0];
+    if (!allowed.has(sid)) bad("Você não gerencia este setor.", 403);
+    const dir = q.dir || "todas";
+    const inDir = {
+      todas: (d) => d.origin_sector_id === sid || d.dest_sector_id === sid || (d.periods || []).some((p) => p.sector_id === sid),
+      enviadas: (d) => d.origin_sector_id === sid,
+      recebidas: (d) => d.dest_sector_id === sid,
+      passaram: (d) => (d.periods || []).some((p) => p.sector_id === sid) && d.dest_sector_id !== sid,
+    }[dir];
+    if (!inDir) bad("Filtro inválido.");
+    const today = L.todayLocal();
+    const st = q.status || "";
+    const okStatus = (d) => !st || (st === "vencidas" ? d.status === L.STATUS_ABERTA && d.due_date < today : st === "abertas" ? L.OPEN_STATUSES.includes(d.status) : d.status === st);
+    const srcs = (q.sources || "").split("|").map((x) => x.trim().toLowerCase()).filter(Boolean);
+    const term = (q.q || "").trim().toLowerCase();
+    const a = q.date_from ? L.startOfDayUtc(q.date_from) : null, b = q.date_to ? L.endOfDayUtc(q.date_to) : null;
+    const list = [...db.demands.values()].filter((d) => inDir(d) && okStatus(d)
+      && (!srcs.length || srcs.includes((d.request_source || "").toLowerCase()) || (srcs.includes("(sem origem)") && !d.request_source))
+      && (!term || d.title.toLowerCase().includes(term) || d.code.toLowerCase().includes(term))
+      && (!a || d.created_at >= a) && (!b || d.created_at <= b));
+    list.sort(SORTS.prazo);
+    const lastNote = (d) => {
+      const e = [...(d.events || [])].reverse().find((x) => ["transferida", "resolvida", "concluida", "devolvida", "reaberta", "cancelada", "prazo_alterado", "prazo_etapa", "conclusao_confirmada"].includes(x.type));
+      if (!e) return null;
+      const who = (db.users.get(e.actor_id) || {}).full_name || "Sistema";
+      const txt = { transferida: `${who} encaminhou para ${e.data.internal ? e.data.to_user : e.data.to_sector}: ${e.data.reason}`, resolvida: `${who} concluiu: ${e.data.resolution}`, concluida: `${who} concluiu: ${e.data.resolution}`,
+        devolvida: `${who} devolveu: ${e.data.reason}`, reaberta: `${who} reabriu: ${e.data.reason}`, cancelada: `${who} cancelou: ${e.data.reason}`,
+        prazo_alterado: `${who} mudou o prazo para ${e.data.new}: ${e.data.justification}`, prazo_etapa: `${who} mudou o prazo da etapa: ${e.data.justification}`,
+        conclusao_confirmada: e.data.auto ? "Confirmada automaticamente" : `${who} confirmou a conclusão` }[e.type];
+      return { at: L.localIso(e.at), text: txt };
+    };
+    const items = summarize(u, list).map((x, i) => ({ ...x, resolution: list[i].resolution, last_note: lastNote(list[i]),
+      direction: list[i].origin_sector_id === sid ? (list[i].dest_sector_id === sid ? "interna" : "enviada") : list[i].dest_sector_id === sid ? "recebida" : "passou" }));
+    const fontes = [...new Set([...db.demands.values()].filter(inDir).map((d) => d.request_source || "(sem origem)"))].sort((x, y) => x.localeCompare(y));
+    return { sector: L.sectorRef(L.sectorById(db, sid)), sectors: db.sectors.filter((s) => allowed.has(s.id)).map(L.sectorRef), items, fontes, origens: L.origens(db) };
+  });
+
   // --- painel gerencial
   on("GET", "/api/dashboard", (q) => {
     const u = me();
@@ -514,12 +629,15 @@ export function createServer(store, appCfg) {
       for (const p of d.periods || []) {
         if (p.started_at < f.a || p.started_at > f.b) continue;
         const s = L.sectorById(db, p.sector_id);
-        const x = bySector.get(p.sector_id) || { sector: { id: s.id, name: s.name, acronym: s.acronym }, durations: [], arrived_overdue: 0, open_periods: 0 };
+        const x = bySector.get(p.sector_id) || { sector: { id: s.id, name: s.name, acronym: s.acronym, color: s.color }, durations: [], arrived_overdue: 0, open_periods: 0, stages: 0, stages_ok: 0, stages_late: 0 };
         x.durations.push(L.secondsBetween(p.started_at, p.ended_at)); if (p.arrived_overdue) x.arrived_overdue++; if (!p.ended_at) x.open_periods++;
+        const si = L.stageInfo(p, d);
+        if (si && (si.done || si.days_late)) { x.stages++; if (si.on_time && si.done) x.stages_ok++; else x.stages_late++; }
         bySector.set(p.sector_id, x);
       }
     }
     const sectors = [...bySector.values()].map((x) => ({ sector: x.sector, arrived_overdue: x.arrived_overdue, open_periods: x.open_periods, periods: x.durations.length,
+      stages: x.stages, stages_ok: x.stages_ok, stages_late: x.stages_late,
       mean_days: days1(mean(x.durations)), median_days: days1(median(x.durations)), total_days: days1(x.durations.reduce((a, b) => a + b, 0)) })).sort((a, b) => b.total_days - a.total_days);
     return {
       filters: { date_from: f.from, date_to: f.to }, scope: u.is_admin ? "todas as demandas" : "demandas relacionadas aos setores que você gerencia",
@@ -531,7 +649,7 @@ export function createServer(store, appCfg) {
         tempo_atendimento: { media_dias: durations.length ? days1(mean(durations)) : null, mediana_dias: durations.length ? days1(median(durations)) : null, amostra: durations.length } },
       sectors,
       definitions: { estoque: "Abertas, vencidas e vencendo refletem a situação atual.", entradas: "Demandas criadas no período.", concluidas: "Demandas com conclusão vigente no período.",
-        prazo: "Dentro do prazo = concluída até o fim do prazo vigente.", tempo_atendimento: "Da criação até a conclusão, em dias corridos.", setores: "Passagens por setor iniciadas no período.",
+        prazo: "Dentro do prazo = concluída até o fim do prazo vigente.", tempo_atendimento: "Da criação até a conclusão, em dias corridos.", setores: "Passagens por setor iniciadas no período.", etapas: "Etapas com prazo próprio já encerradas (ou já vencidas): cumprida quando o setor encaminhou ou concluiu até o prazo da etapa.",
         vencendo: `Vence hoje ou nos próximos ${cfgKey("deadline_bands").yellow_max_days_left} dias.` },
     };
   });
@@ -546,13 +664,13 @@ export function createServer(store, appCfg) {
     const members = users().filter((u) => L.memberSectorIds(db, u).has(s.id));
     const p = s.primary_manager_id ? db.users.get(s.primary_manager_id) : null;
     return { id: s.id, name: s.name, acronym: s.acronym, active: s.active !== false, color: s.color, primary_manager: p ? { id: p.id, name: p.full_name } : null,
-      managers: members.filter((u) => L.roleIn(db, u, s.id) !== "colaborador").map((u) => ({ id: u.id, name: u.full_name, role: L.roleIn(db, u, s.id) })),
+      managers: members.filter((u) => L.roleIn(db, u, s.id) !== "colaborador").map((u) => ({ id: u.id, name: u.full_name, role: L.roleIn(db, u, s.id) })).sort((x, y) => (x.role === "gerente" ? -1 : y.role === "gerente" ? 1 : x.name.localeCompare(y.name))),
       member_count: members.length, open_demands: [...db.demands.values()].filter((d) => d.dest_sector_id === s.id && L.OPEN_STATUSES.includes(d.status)).length };
   }
   function checkSectorNames(list, name, acronym, excludeId) {
     name = String(name || "").split(/\s+/).join(" ").trim(); acronym = String(acronym || "").trim().toUpperCase();
     if (name.length < 2) bad("Nome do setor inválido.");
-    if (!/^[A-Z0-9]{2,8}$/.test(acronym)) bad("Sigla deve ter de 2 a 8 letras/números, sem espaços.");
+    if (!/^[A-Z0-9]{2,5}$/.test(acronym)) bad("Sigla deve ter de 2 a 5 letras/números, sem espaços.");
     if (list.some((s) => s.id !== excludeId && (s.name.toLowerCase() === name.toLowerCase() || s.acronym === acronym))) bad("Já existe setor com este nome ou sigla.", 409);
     return [name, acronym];
   }
@@ -575,24 +693,19 @@ export function createServer(store, appCfg) {
       const open = [...db.demands.values()].filter((d) => d.dest_sector_id === sid && L.OPEN_STATUSES.includes(d.status)).length;
       if (open) bad(`O setor possui ${open} demanda(s) aberta(s). Transfira-as antes de desativar.`, 409);
     }
-    if (b.primary_manager_id) {
-      const t = db.users.get(Number(b.primary_manager_id));
-      if (!t || !t.is_active || !["gestor", "gerente"].includes(L.roleIn(db, t, sid))) bad("O gerente principal precisa ser gerente ou gestor ativo deste setor.");
-    }
     await mutateSectors((list) => {
       const s = list.find((x) => x.id === sid);
       if (!s) bad("Setor não encontrado.", 404);
       if (b.name !== undefined || b.acronym !== undefined) [s.name, s.acronym] = checkSectorNames(list, b.name || s.name, b.acronym || s.acronym, sid);
       if (b.color) { if (!/^#[0-9a-fA-F]{6}$/.test(b.color)) bad("Cor inválida. Use #RRGGBB."); s.color = b.color.toLowerCase(); }
       if (b.active !== undefined) s.active = !!b.active;
-      if (b.clear_primary) s.primary_manager_id = null; else if (b.primary_manager_id) s.primary_manager_id = Number(b.primary_manager_id);
     }, "Edita setor");
     return sectorDict(L.sectorById(db, sid));
   });
   on("POST", "/api/admin/sectors/:id/managers", async (q, b, p) => {
     requireAdmin(me());
     const sid = Number(p.id);
-    await setRole(b.user_id, sid, b.role || "gestor");
+    await setRole(b.user_id, sid, b.role || "lider");
     return sectorDict(L.sectorById(db, sid));
   });
   on("DELETE", "/api/admin/sectors/:id/managers/:uid", async (q, b, p) => {
@@ -600,16 +713,25 @@ export function createServer(store, appCfg) {
     await setRole(p.uid, Number(p.id), "colaborador");
     return sectorDict(L.sectorById(db, Number(p.id)));
   });
+  // Perfis no setor: colaborador, executivo/líder ou gerente. Só há um gerente por setor:
+  // nomear um novo gerente passa o anterior para executivo/líder.
   async function setRole(uid, sid, role) {
-    if (!L.ROLE_LABEL[role]) bad("Perfil inválido.");
-    await mutateUser(uid, (x) => {
-      const m = (x.memberships || []).find((mm) => mm.sector_id === sid);
-      if (m) m.role = role; else x.memberships = [...(x.memberships || []), { sector_id: sid, role, active: true }];
-      return x;
-    }, "Perfil no setor");
+    role = L.normRole(role);
+    uid = Number(uid);
     const s = L.sectorById(db, sid);
-    if (role !== "colaborador" && !s.primary_manager_id) await mutateSectors((list) => { list.find((x) => x.id === sid).primary_manager_id = Number(uid); });
-    if (role === "colaborador" && s.primary_manager_id === Number(uid)) await mutateSectors((list) => { list.find((x) => x.id === sid).primary_manager_id = null; });
+    if (!s) bad("Setor não encontrado.", 404);
+    const target = db.users.get(uid);
+    if (!target || !target.is_active) bad("Pessoa inválida ou desativada.");
+    await mutateUsers((list) => {
+      for (const x of list) {
+        const m = (x.memberships || []).find((mm) => mm.sector_id === sid);
+        if (x.id === uid) {
+          if (m) { m.role = role; m.active = true; } else x.memberships = [...(x.memberships || []), { sector_id: sid, role, active: true }];
+        } else if (role === "gerente" && m && L.normRole(m.role) === "gerente") m.role = "lider";
+      }
+    }, "Perfil no setor");
+    const pm = role === "gerente" ? uid : s.primary_manager_id === uid ? null : s.primary_manager_id;
+    if (pm !== s.primary_manager_id) await mutateSectors((list) => { list.find((x) => x.id === sid).primary_manager_id = pm; }, "Gerente do setor");
   }
   on("POST", "/api/admin/users/:id/role", async (q, b, p) => { requireAdmin(me()); await setRole(p.id, Number(b.sector_id), b.role); return { ok: true }; });
 
@@ -654,9 +776,10 @@ export function createServer(store, appCfg) {
   // Cadastro em massa: linhas {nome, email, telefone, setor, perfil}. Sem perfil = colaborador.
   function parseImport(rows, list) {
     const seen = new Set();
+    const gerentesNaPlanilha = new Set();
     return rows.map((r, i) => {
       const out = { linha: i + 1, nome: String(r.nome || "").trim(), email: String(r.email || "").trim().toLowerCase(), telefone: String(r.telefone || "").trim(),
-        setor: String(r.setor || "").trim(), perfil: String(r.perfil || "").trim().toLowerCase() || "colaborador", erros: [] };
+        setor: String(r.setor || "").trim(), perfil: String(r.perfil || "").trim().toLowerCase() || "colaborador", erros: [], avisos: [] };
       try { out.email = L.normalizeEmail(out.email) || ""; } catch (e) { out.erros.push(e.message); }
       if (!out.email) out.erros.push("E-mail obrigatório (o login vem dele).");
       out.login = out.email ? out.email.split("@")[0] : "";
@@ -669,9 +792,15 @@ export function createServer(store, appCfg) {
       out.setores = out.setor.split(/[;,/]/).map((x) => x.trim()).filter(Boolean).map((x) => db.sectors.find((s) => s.active !== false && (norm(s.acronym) === norm(x) || norm(s.name) === norm(x))));
       if (!out.setor) out.erros.push("Setor obrigatório.");
       else if (out.setores.some((s) => !s)) out.erros.push("Setor não existe.");
-      const pmap = { colaborador: "colaborador", gestor: "gestor", gerente: "gerente", "": "colaborador" };
+      const pmap = { colaborador: "colaborador", "": "colaborador", gerente: "gerente", lider: "lider", executivo: "lider", "executivo/lider": "lider", "executivo / lider": "lider", "lider/executivo": "lider", gestor: "lider" };
       out.role = pmap[norm(out.perfil)];
-      if (!out.role) out.erros.push("Perfil deve ser colaborador, gestor ou gerente.");
+      if (!out.role) out.erros.push("Perfil deve ser Colaborador, Executivo/Líder ou Gerente.");
+      if (out.role === "gerente") for (const s of out.setores.filter(Boolean)) {
+        if (gerentesNaPlanilha.has(s.id)) out.erros.push(`Mais de um gerente para ${s.acronym} na planilha (só pode haver um por setor).`);
+        gerentesNaPlanilha.add(s.id);
+        const atual = L.sectorGerente(db, s.id);
+        if (atual && atual.username !== out.login) out.avisos.push(`${s.acronym} já tem gerente (${atual.full_name}); ele(a) passa a executivo/líder.`);
+      }
       return out;
     });
   }
@@ -682,31 +811,32 @@ export function createServer(store, appCfg) {
     if (rows.length > 500) bad("No máximo 500 pessoas por vez.");
     const checked = parseImport(rows, users());
     const preview = checked.map((r) => ({ linha: r.linha, nome: r.nome, email: r.email, telefone: r.telefone_norm || r.telefone, setores: (r.setores || []).filter(Boolean).map((s) => s.acronym).join(", "),
-      perfil: L.ROLE_LABEL[r.role] || r.perfil, login: r.login, erros: r.erros }));
+      perfil: L.ROLE_LABEL[r.role] || r.perfil, login: r.login, erros: r.erros, avisos: r.avisos }));
     if (b.dry_run) return { rows: preview, ok: preview.filter((r) => !r.erros.length).length, errors: preview.filter((r) => r.erros.length).length };
     const good = checked.filter((r) => !r.erros.length);
     if (!good.length) bad("Nenhuma linha válida para importar.");
     const creds = [];
     const prepared = [];
     for (const r of good) { const temp = b.password || tempPassword(); prepared.push({ r, temp, pwd: await hashPassword(temp) }); }
+    const newGerentes = new Map(); // setor → login do novo gerente
     await mutateUsers((list) => {
       for (const { r, temp, pwd } of prepared) {
         if (list.some((u) => u.username === r.login)) continue;
         const u = newUser(list, { username: r.login, full_name: r.nome, phone_corp: r.telefone_norm, email: r.email,
           sector_roles: r.setores.map((s) => ({ sector_id: s.id, role: r.role })), must_change_password: !b.password, created_by: actor.id }, pwd);
         creds.push({ nome: u.full_name, login: u.username, senha: temp, email: u.email, setores: r.setores.map((s) => s.acronym).join(", "), perfil: L.ROLE_LABEL[r.role] });
+        if (r.role === "gerente") for (const s of r.setores) newGerentes.set(s.id, u.username);
+      }
+      // um gerente por setor: o anterior passa a executivo/líder
+      for (const [sid, login] of newGerentes) for (const x of list) {
+        const m = (x.memberships || []).find((mm) => mm.sector_id === sid);
+        if (x.username !== login && m && L.normRole(m.role) === "gerente") m.role = "lider";
       }
     }, `Cadastro em massa (${prepared.length})`);
-    // gerentes viram gerente principal dos setores que ainda não têm
-    const fresh = users();
-    await mutateSectors((list) => {
-      let changed = false;
-      for (const s of list) if (!s.primary_manager_id) {
-        const g = fresh.find((u) => (u.memberships || []).some((m) => m.sector_id === s.id && m.role === "gerente")) || fresh.find((u) => (u.memberships || []).some((m) => m.sector_id === s.id && m.role === "gestor"));
-        if (g) { s.primary_manager_id = g.id; changed = true; }
-      }
-      return changed ? list : undefined;
-    }, "Gerentes principais");
+    if (newGerentes.size) {
+      const byLogin = new Map(users().map((u) => [u.username, u.id]));
+      await mutateSectors((list) => { for (const [sid, login] of newGerentes) { const s = list.find((x) => x.id === sid); if (s && byLogin.has(login)) s.primary_manager_id = byLogin.get(login); } }, "Gerentes dos setores");
+    }
     return { created: creds, skipped: checked.length - creds.length, rows: preview };
   });
 
@@ -719,6 +849,7 @@ export function createServer(store, appCfg) {
     const clean = {};
     for (const [k, def] of Object.entries(L.DEFAULT_CONFIG[key])) {
       let v = b[k] === undefined ? cfgKey(key)[k] : b[k];
+      if (def && typeof def === "object") { clean[k] = cfgKey(key)[k]; continue; }
       if (typeof def === "number") { v = Number(v); if (!Number.isFinite(v) || v < 0) bad(`Valor inválido para ${k}.`); }
       else v = String(v || "").trim();
       clean[k] = v;
@@ -735,7 +866,9 @@ export function createServer(store, appCfg) {
   on("GET", "/api/admin/avisos", () => {
     requireAdmin(me());
     const st = db.avisos || {};
-    return { config: cfgKey("notifications"), log: (st.log || []).map((x) => ({ ...x, at: L.localIso(x.at) })), last_digest: st.last_digest || null, avisos_repo: appCfg.avisosRepo };
+    const rules = Object.fromEntries(L.RULES.map((r) => [r.key, L.rule(db, r.key)]));
+    return { config: cfgKey("notifications"), flow: cfgKey("flow"), rules, rule_defs: L.RULES, recipients: L.RECIPIENTS, log: (st.log || []).map((x) => ({ ...x, at: L.localIso(x.at) })),
+      last_digest: st.last_digest || null, avisos_repo: appCfg.avisosRepo, runs: (st.runs || []).map((x) => ({ ...x, at: L.localIso(x.at) })), last_run_at: L.localIso(st.last_run_at || null) };
   });
   on("GET", "/api/admin/avisos/resumo", (q) => {
     requireAdmin(me());

@@ -78,6 +78,11 @@ const ICONS = {
   route: '<circle cx="5" cy="5" r="2"/><circle cx="15" cy="15" r="2"/><path d="M7 5h5a3 3 0 010 6H8a3 3 0 000 6h5"/>',
   hourglass: '<path d="M6 3h8M6 17h8M7 3c0 4 6 4 6 7s-6 3-6 7M13 3c0 4-6 4-6 7s6 3 6 7"/>',
   undo: '<path d="M7 7L3 11l4 4"/><path d="M3 11h9a5 5 0 000-10H9"/>',
+  clip: '<path d="M14.5 9.5l-5.3 5.3a3.2 3.2 0 01-4.5-4.5l6-6a2.1 2.1 0 013 3l-6 6a1 1 0 01-1.5-1.5l5.3-5.3"/>',
+  print: '<path d="M6 7V3h8v4"/><rect x="3" y="7" width="14" height="7" rx="1.5"/><path d="M6 12h8v5H6z"/>',
+  stage: '<circle cx="4" cy="10" r="1.8"/><circle cx="16" cy="10" r="1.8"/><path d="M6 10h8"/><path d="M10 6v8"/>',
+  minutes: '<rect x="4" y="3" width="12" height="14" rx="1.5"/><path d="M7 7h6M7 10h6M7 13h3"/><path d="M12.5 14l1.2 1.2L16 13"/>',
+  teams: '<rect x="3" y="5" width="10" height="10" rx="1.5"/><path d="M6 8h4M8 8v5"/><circle cx="15.5" cy="7" r="1.6"/><path d="M14 10h3v3.5a2 2 0 01-3 1.6"/>',
 };
 
 export function icon(name, size = 16) {
@@ -146,7 +151,19 @@ export function deadlineBadge(dl, due, { withDate = true } = {}) {
 export function dueCell(d) {
   const lvl = d.deadline.level;
   return h("span", { class: `due due-${lvl}`, title: d.deadline.label }, fmtDate(d.due_date),
-    ["red", "darkred", "purple", "orange"].includes(lvl) ? h("small", null, d.deadline.label) : null);
+    ["red", "darkred", "purple", "orange"].includes(lvl) ? h("small", null, d.deadline.label) : null,
+    d.stage && !d.stage.done ? stageMini(d.stage) : null);
+}
+// Prazo da etapa (subprazo do setor atual), em uma linha curta.
+export function stageLabel(st) {
+  if (!st) return "";
+  if (st.done) return st.on_time ? "etapa cumprida no prazo" : `etapa estourou ${st.days_late} dia(s)`;
+  if (st.days_late) return `etapa vencida há ${st.days_late} dia(s)`;
+  return st.days_left === 0 ? "etapa vence hoje" : st.days_left === 1 ? "etapa vence amanhã" : `etapa vence em ${st.days_left} dias`;
+}
+export function stageLevel(st) { return !st ? "neutral" : st.done ? (st.on_time ? "ok" : "late") : st.days_late ? "late" : st.days_left <= 1 ? "soon" : "neutral"; }
+export function stageMini(st) {
+  return h("span", { class: `stage-mini st-${stageLevel(st)}`, title: "Prazo desta etapa (setor atual)" }, icon("stage", 12), `Etapa ${fmtDate(st.due).slice(0, 5)}`);
 }
 // Cada informação tem uma cor única e fixa (sempre com texto e ícone).
 export function statusBadge(st) {
@@ -329,6 +346,37 @@ export function field(label, input, { required = false, hint } = {}) {
     hint ? h("div", { class: "small muted", style: { marginTop: "3px" } }, hint) : null);
 }
 export function input(attrs = {}) { return h("input", { type: "text", ...attrs }); }
+// Campo com lista suspensa de sugestões que também aceita texto livre (ex.: origem do pedido).
+export function comboInput(options, { value = "", placeholder = "", maxlength = 120, id } = {}) {
+  const inp = h("input", { type: "text", value, placeholder, maxlength, id, autocomplete: "off", role: "combobox", "aria-autocomplete": "list", "aria-expanded": "false" });
+  const list = h("div", { class: "combo-list hidden", role: "listbox" });
+  const wrap = h("div", { class: "combo" }, inp, h("button", { type: "button", class: "combo-arrow", tabindex: "-1", "aria-label": "Ver opções", onclick: () => { inp.focus(); open(true); } }, "▾"), list);
+  let active = -1, shown = [];
+  const norm = (x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const close = () => { list.classList.add("hidden"); inp.setAttribute("aria-expanded", "false"); active = -1; };
+  const pick = (v) => { inp.value = v; close(); inp.dispatchEvent(new Event("input", { bubbles: true })); inp.dispatchEvent(new Event("change", { bubbles: true })); };
+  const open = (all = false) => {
+    const t = norm(inp.value.trim());
+    shown = options.filter((o) => all || !t || norm(o).includes(t));
+    clear(list);
+    shown.forEach((o, i) => list.appendChild(h("div", { class: "combo-opt" + (i === active ? " on" : ""), role: "option", onmousedown: (e) => { e.preventDefault(); pick(o); } }, o)));
+    const typed = inp.value.trim();
+    if (typed && !options.some((o) => norm(o) === norm(typed))) list.appendChild(h("div", { class: "combo-free" }, `Usar “${typed}” (texto livre)`));
+    if (!list.childNodes.length) { close(); return; }
+    list.classList.remove("hidden"); inp.setAttribute("aria-expanded", "true");
+  };
+  inp.addEventListener("focus", () => open(true));
+  inp.addEventListener("input", (e) => { if (e.isTrusted) { active = -1; open(); } });
+  inp.addEventListener("blur", () => setTimeout(close, 120));
+  inp.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); if (list.classList.contains("hidden")) open(true); active = Math.max(0, Math.min(shown.length - 1, active + (e.key === "ArrowDown" ? 1 : -1))); open(!inp.value.trim()); }
+    else if (e.key === "Enter" && active >= 0 && shown[active] && !list.classList.contains("hidden")) { e.preventDefault(); pick(shown[active]); }
+    else if (e.key === "Escape") close();
+  });
+  wrap.input = inp;
+  Object.defineProperty(wrap, "value", { get: () => inp.value, set: (v) => { inp.value = v; } });
+  return wrap;
+}
 export function select(options, value, attrs = {}) {
   const s = h("select", attrs);
   for (const o of options) {

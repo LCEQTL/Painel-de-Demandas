@@ -59,6 +59,14 @@ export function imageObjectUrl(uid) {
   return imgCache.get(uid);
 }
 
+// Arquivo anexado (bloco {t:"file"}): baixa, decifra e descomprime se foi enviado comprimido.
+export async function fileBytes(b) {
+  await ready();
+  let bytes = await getStore().getBinary(P.anexo(b.uid));
+  if (b.gz) bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
+  return bytes;
+}
+
 export function qs(params) {
   const u = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => { if (v !== null && v !== undefined && v !== "") u.set(k, v); });

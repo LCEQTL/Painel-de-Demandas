@@ -3,15 +3,15 @@ import { api, qs } from "../api.js";
 import {
   h, clear, icon, fmtDate, fmtDateTime, todayBR, deadlineBadge, statusBadge, priorityTag, priorityMark, conclusionTag, sourceTag, dueCell,
   avatar, personTag, loading, empty, errorState, toast, busy, errorBox, modal, field, input, select, personPicker, sectorChip,
-  sectorFlow, actionMenu, drawer, STATUS, PRIORITY,
+  sectorFlow, actionMenu, drawer, STATUS, PRIORITY, comboInput, stageLabel, stageLevel,
 } from "../ui.js";
-import { renderContent, createEditor, renderTable, tableEditor } from "../content.js";
+import { renderContent, createEditor, renderTable, tableEditor, attachmentsPicker, renderAttachments } from "../content.js";
 import { state, navigate, mySectors, isAdmin, refreshCounts, sectorById, setLeaveGuard, isOnline } from "../state.js";
 import { play } from "../sounds.js";
 
 // ---------------------------------------------------------------- tabela de demandas (Início, Acompanhamento, Indicadores)
 export function demandTable(items, { compact = false } = {}) {
-  const head = ["Título", "Pedido feito em / por", "Prioridade", "Status", "Conclusão", "Responsável", "Prazo"];
+  const head = ["Título", "Origem do pedido", "Prioridade", "Status", "Conclusão", "Responsável", "Prazo"];
   const tbody = h("tbody");
   for (const d of items) {
     const mark = d.new_for_me ? h("span", { class: "mark-new" }, "Nova") : d.unread ? h("span", { class: "mark-msg" }, "Mensagem nova") : null;
@@ -54,13 +54,15 @@ export async function listPage(main) {
   const fBtn = h("button", { class: "btn", type: "button", "aria-expanded": String(LS.filtersOpen) }, icon("list", 15), "Filtros");
   const fBox = h("div", { class: "panel pad filters" + (LS.filtersOpen ? "" : " hidden") });
   const secOpts = [{ value: "", label: "Todos" }, ...state.sectors.map((s) => ({ value: s.id, label: s.name }))];
-  const fSource = input({ value: LS.f.source, placeholder: "Ex.: Comitê de Clientes" });
+  if (!state.origens) state.origens = await api.get("/api/origens").then((r) => r.origens).catch(() => []);
+  const fSourceBox = comboInput(state.origens, { value: LS.f.source, placeholder: "Todas" });
+  const fSource = fSourceBox.input;
   const fDest = select(secOpts, LS.f.dest_id), fOrigin = select(secOpts, LS.f.origin_id);
   const fPrio = select([{ value: "", label: "Todas" }, ...Object.entries(PRIORITY).map(([k, v]) => ({ value: k, label: v }))], LS.f.priority);
   const sort = select([{ value: "prazo", label: "Prazo mais próximo" }, { value: "atualizacao", label: "Atualizadas recentemente" }, { value: "criacao", label: "Criadas recentemente" }], LS.sort);
   const who = h("div", { class: "hint" });
   const fWho = personPicker({ placeholder: "Responsável…", onPick: (p) => { LS.f.assignee = p; reload(); } });
-  fBox.append(h("div", { class: "grid3" }, field("Pedido feito em / por", fSource), field("Setor atual", fDest), field("Setor que abriu", fOrigin),
+  fBox.append(h("div", { class: "grid3" }, field("Origem do pedido", fSourceBox), field("Setor atual", fDest), field("Setor que abriu", fOrigin),
     field("Prioridade", fPrio), h("div", null, field("Responsável", fWho), who), field("Ordenar", sort)),
   h("div", { class: "row", style: { justifyContent: "flex-end", marginTop: "10px" } }, h("button", { class: "linkbtn", onclick: () => {
     LS.f = { source: "", dest_id: "", origin_id: "", assignee: null, priority: "" }; fSource.value = ""; fDest.value = fOrigin.value = fPrio.value = ""; reload();
@@ -111,12 +113,14 @@ export async function newDemand(main) {
   const mine = mySectors();
   const originOpts = mine.length ? mine : isAdmin() ? state.sectors : [];
   if (!originOpts.length) {
-    main.appendChild(h("div", { class: "panel pad" }, "Você ainda não pertence a nenhum setor. Peça ao gestor do seu setor ou ao administrador para incluir seu vínculo."));
+    main.appendChild(h("div", { class: "panel pad" }, "Você ainda não pertence a nenhum setor. Peça ao gerente do seu setor ou ao administrador para incluir seu vínculo."));
     return;
   }
   const title = input({ maxlength: 200, placeholder: "O que precisa ser feito?", id: "nd-title" });
   const due = input({ type: "date", min: todayBR(), id: "nd-due" });
-  const source = input({ maxlength: 120, id: "nd-source", placeholder: "Ex.: Comitê de Clientes, reunião com o presidente, ANEEL" });
+  const origens = await api.get("/api/origens").then((r) => r.origens).catch(() => []);
+  const sourceBox = comboInput(origens, { id: "nd-source", placeholder: "Escolha da lista ou digite" });
+  const source = sourceBox.input;
   const dest = select([{ value: "", label: "Selecione o setor…" }, ...state.sectors.map((s) => ({ value: s.id, label: s.name }))], "", { id: "nd-dest" });
   const person = select([{ value: "", label: "Escolha o setor primeiro" }], "", { disabled: true, id: "nd-person" });
   const personHint = h("div", { class: "hint" });
@@ -126,7 +130,7 @@ export async function newDemand(main) {
   justWrap.classList.add("hidden");
   prio.addEventListener("change", () => justWrap.classList.toggle("hidden", prio.value !== "urgente"));
   const origin = select(originOpts.map((s) => ({ value: s.id, label: s.name })), originOpts[0].id, { id: "nd-origin" });
-  const editor = createEditor({ placeholder: "Descreva o pedido. Você pode colar imagens e células do Excel aqui." });
+  const editor = createEditor({ placeholder: "Descreva o pedido. Cole prints e células do Excel aqui, ou use Anexar para PDF, Word e Excel." });
 
   const forMe = h("label", { class: "checkbox forme" }, h("input", { type: "checkbox", id: "nd-forme" }), "É para mim");
   const fillPeople = async (selectId) => {
@@ -144,7 +148,7 @@ export async function newDemand(main) {
   };
   const hint = () => {
     const s = sectorById(dest.value);
-    personHint.textContent = !dest.value ? "" : person.value ? "" : s && s.primary_manager ? `Sem pessoa escolhida, vai para ${s.primary_manager.name}.` : "Este setor não tem gerente principal: escolha uma pessoa.";
+    personHint.textContent = !dest.value ? "" : person.value ? "" : s && s.primary_manager ? `Sem pessoa escolhida, vai para ${s.primary_manager.name}.` : "Este setor não tem gerente: escolha uma pessoa.";
   };
   dest.addEventListener("change", () => { forMe.firstChild.checked = false; fillPeople(); });
   person.addEventListener("change", hint);
@@ -165,7 +169,7 @@ export async function newDemand(main) {
     if (!title.value.trim()) throw new Error("Informe a demanda (título).");
     if (!due.value) throw new Error("Informe o prazo.");
     if (!dest.value) throw new Error("Escolha o setor responsável.");
-    if (editor.isUploading()) throw new Error("Aguarde o envio das imagens.");
+    if (editor.isUploading()) throw new Error("Aguarde o envio dos anexos.");
     if (editor.isEmpty()) throw new Error("Descreva o pedido.");
     const r = await api.post("/api/demands", {
       title: title.value, description: editor.getValue(), origin_sector_id: Number(origin.value), dest_sector_id: Number(dest.value),
@@ -179,13 +183,13 @@ export async function newDemand(main) {
   }, err));
 
   main.append(
-    h("div", { class: "page-head" }, h("h1", null, "Cadastro")),
+    h("div", { class: "page-head" }, h("h1", null, "Nova demanda")),
     h("div", { class: "panel pad form-card" },
       h("div", { class: "fgrid" },
         h("div", { class: "span3" }, field("Demanda", title, { required: true })),
         h("div", null, field("Prazo", due, { required: true })),
-        h("div", { class: "span2" }, h("div", { class: "f" }, h("label", { for: "nd-source" }, h("span", null, "Pedido feito em / por")), source),
-          h("div", { class: "hint" }, "Onde ou por quem a demanda surgiu. Não é o setor.")),
+        h("div", { class: "span2" }, h("div", { class: "f" }, h("label", { for: "nd-source" }, h("span", null, "Origem do pedido")), sourceBox),
+          h("div", { class: "hint" }, "Onde ou por quem a demanda surgiu (comitê, reunião, ANEEL…). Não é o setor.")),
         h("div", null, field("Setor responsável", dest, { required: true })),
         h("div", null, h("div", { class: "f" }, h("label", { for: "nd-person" }, h("span", null, "Responsável ", h("span", { class: "req" }, "*"))), person), personHint, forMe),
         h("div", null, field("Prioridade", prio)), h("div", { class: "span3" }, justWrap),
@@ -222,7 +226,7 @@ export async function detailPage(main, { id }) {
   const ctx = { get d() { return d; }, update, reload };
 
   sendBtn.addEventListener("click", busy(sendBtn, async () => {
-    if (editor.isUploading()) throw new Error("Aguarde o envio da imagem.");
+    if (editor.isUploading()) throw new Error("Aguarde o envio do anexo.");
     const content = editor.getValue();
     if (!content.blocks.length) throw new Error("Escreva uma mensagem.");
     const nd = await api.post(`/api/demands/${d.id}/messages`, { content });
@@ -234,7 +238,7 @@ export async function detailPage(main, { id }) {
   const timer = setInterval(async () => {
     if (!document.body.contains(root)) { clearInterval(timer); return; }
     if (document.visibilityState !== "visible") return;
-    try { const nd = await api.get(`/api/demands/${d.id}`); if (nd.version !== d.version || nd.messages.length !== d.messages.length) update(nd); } catch (_) { /* tenta de novo */ }
+    try { const nd = await api.get(`/api/demands/${d.id}?poll=1`); if (nd.version !== d.version || nd.messages.length !== d.messages.length) update(nd); } catch (_) { /* tenta de novo */ }
   }, 20000);
 
   const render = () => {
@@ -244,13 +248,14 @@ export async function detailPage(main, { id }) {
     const acts = [];
     if (p.confirm) {
       acts.push(h("button", { class: "btn success lg", onclick: () => act(ctx, "confirm", undefined, "acao", "Conclusão confirmada.") }, icon("check", 16), "Confirmar conclusão"));
-      acts.push(h("button", { class: "btn outline", onclick: () => textDialog(ctx, "Devolver ao responsável", "O que ainda falta?", "send-back", "reason", "Devolver", `A demanda volta para ${d.assignee.name} como pendente. O prazo continua o mesmo.`) }, icon("undo", 15), "Devolver"));
+      acts.push(h("button", { class: "btn outline", onclick: () => textDialog(ctx, "Devolver ao responsável", "O que ainda falta?", "send-back", "reason", "Devolver", `A demanda volta para ${d.assignee.name} como pendente. O prazo continua o mesmo.`, false, true) }, icon("undo", 15), "Devolver"));
     }
     if (p.complete) acts.push(h("button", { class: "btn success lg", onclick: () => completeDialog(ctx) }, icon("check", 16), "Concluir"));
     if (p.transfer) acts.push(h("button", { class: "btn outline lg", onclick: () => forwardDialog(ctx) }, icon("forward", 16), "Encaminhar"));
     if (p.reopen) acts.push(h("button", { class: "btn outline", onclick: () => textDialog(ctx, "Reabrir demanda", "Motivo da reabertura", "reopen", "reason", "Reabrir", "A conclusão anterior fica no histórico.") }, icon("undo", 15), "Reabrir"));
     const more = [];
-    if (p.change_due) more.push({ label: "Alterar prazo", onClick: () => dueDialog(ctx) });
+    if (p.change_due) more.push({ label: "Alterar prazo final", onClick: () => dueDialog(ctx) });
+    if (p.stage_due) more.push({ label: "Prazo desta etapa", onClick: () => stageDueDialog(ctx) });
     if (p.edit_request) more.push({ label: "Editar demanda", onClick: () => editDialog(ctx) });
     if (p.manage_watchers) more.push({ label: "Acompanhantes", onClick: () => showDrawer("participantes") });
     more.push({ label: "Ver percurso nos setores", onClick: () => showDrawer("percurso") }, { label: "Ver histórico", onClick: () => showDrawer("historico") });
@@ -274,15 +279,19 @@ export async function detailPage(main, { id }) {
           acts.length || more.length ? h("div", { class: "task-actions" }, acts, actionMenu(h("span", null, icon("dots", 16), " Mais"), more, { btnClass: "btn ghost" })) : null),
         d.status === "aguardando_confirmacao" ? h("div", { class: "notice warn" }, icon("flag", 16),
           meCreator ? `${d.resolved_by ? d.resolved_by.name : d.assignee.name} concluiu esta demanda. Confira a solução e confirme, ou devolva se faltar algo.`
-            : `Concluída por ${d.resolved_by ? d.resolved_by.name : d.assignee.name}. Aguardando ${d.creator.name} confirmar.`) : null,
-        d.resolution && d.status !== "aberta" ? h("div", { class: "resolution" }, h("strong", null, "Solução: "), h("span", { style: { whiteSpace: "pre-wrap" } }, d.resolution)) : null,
+            : `Concluída por ${d.resolved_by ? d.resolved_by.name : d.assignee.name}. Aguardando ${d.creator.name} confirmar.`,
+          d.auto_confirm_at ? h("span", { class: "small", style: { display: "block", marginTop: "2px" } }, `Sem resposta, é confirmada automaticamente em ${fmtDateTime(d.auto_confirm_at)}.`) : null) : null,
+        d.resolution && d.status !== "aberta" ? h("div", { class: "resolution" }, h("strong", null, "Solução: "), h("span", { style: { whiteSpace: "pre-wrap" } }, d.resolution), renderAttachments(d.resolution_files)) : null,
         h("div", { class: "pedido" },
           h("div", { class: "pedido-label" }, "Pedido"),
           h("div", { class: "pedido-body" }, renderContent(d.description)),
           d.priority === "urgente" && d.priority_justification ? h("div", { class: "small", style: { color: "var(--late)", marginTop: "8px", fontWeight: 600 } }, "Urgente: " + d.priority_justification) : null),
         h("div", { class: "metastrip" },
-          meta("Prazo", h("span", null, fmtDate(d.due_date), " ", d.status === "aberta" ? deadlineBadge(d.deadline, null) : null)),
-          meta("Pedido feito em / por", d.request_source || "—"),
+          meta("Prazo final", h("span", null, fmtDate(d.due_date), " ", d.status === "aberta" ? deadlineBadge(d.deadline, null) : null)),
+          d.stage && !d.stage.done ? meta("Prazo da etapa", h("span", { class: "row", style: { gap: "6px" } }, fmtDate(d.stage.due),
+            h("span", { class: `dl-badge stg-${stageLevel(d.stage)}` }, stageLabel(d.stage).replace("etapa ", "")),
+            d.stage.beyond_final ? h("span", { class: "small", style: { color: "var(--red-fg)", fontWeight: 600 }, title: "O prazo final já estava vencido ou vencendo quando a etapa foi definida." }, "passa do prazo final") : null)) : null,
+          meta("Origem do pedido", d.request_source || "—"),
           meta("Setor", sectorFlow(d.origin, d.dest)),
           meta("Responsável", h("span", { class: "row", style: { gap: "6px" } }, personTag(d.assignee, { online: isOnline(d.assignee.id) }), seenEl)),
           meta("Criada por", h("span", null, d.creator.name, h("span", { class: "muted" }, " · " + fmtDateTime(d.created_at)))),
@@ -329,21 +338,25 @@ export async function detailPage(main, { id }) {
 // Acontecimentos que aparecem na conversa, com o motivo/solução em destaque.
 const who = (e) => (e.actor ? (e.actor.id === state.me.id ? "Você" : e.actor.name) : "Sistema");
 const CHAT_EVENTS = {
-  transferida: { ic: "forward", cls: "ev-fwd", title: (e) => (e.data.internal ? `${who(e)} repassou para ${e.data.to_user}` : `${who(e)} encaminhou para ${e.data.to_sector} · ${e.data.to_user}`), text: (e) => e.data.reason, label: "Motivo" },
+  transferida: { ic: "forward", cls: "ev-fwd", title: (e) => (e.data.internal ? `${who(e)} repassou para ${e.data.to_user}` : `${who(e)} encaminhou para ${e.data.to_sector} · ${e.data.to_user}`), text: (e) => e.data.reason, label: "Motivo",
+    extra: (e) => (e.data.stage_due ? h("div", { class: "ex" }, h("span", { class: "lbl" }, "Prazo desta etapa: "), fmtDate(e.data.stage_due), e.data.stage_beyond_final ? h("span", { style: { color: "var(--red-fg)", fontWeight: 600 } }, " (passa do prazo final)") : null) : null) },
   resolvida: { ic: "check", cls: "ev-conf", title: (e) => `${who(e)} concluiu · aguardando confirmação`, text: (e) => e.data.resolution, label: "Solução" },
   concluida: { ic: "check", cls: "ev-done", title: (e) => `${who(e)} concluiu ${e.data.on_time ? "no prazo" : "fora do prazo"}`, text: (e) => e.data.resolution, label: "Solução" },
-  conclusao_confirmada: { ic: "checks", cls: "ev-done", title: (e) => `${who(e)} confirmou a conclusão` },
+  conclusao_confirmada: { ic: "checks", cls: "ev-done", title: (e) => (e.data.auto ? `Confirmada automaticamente (sem resposta em ${e.data.hours}h)` : `${who(e)} confirmou a conclusão`) },
   devolvida: { ic: "undo", cls: "ev-back", title: (e) => `${who(e)} devolveu ao responsável`, text: (e) => e.data.reason, label: "O que falta" },
   reaberta: { ic: "undo", cls: "ev-back", title: (e) => `${who(e)} reabriu a demanda`, text: (e) => e.data.reason, label: "Motivo" },
   cancelada: { ic: "x", cls: "ev-cancel", title: (e) => `${who(e)} cancelou a demanda`, text: (e) => e.data.reason, label: "Justificativa" },
-  prazo_alterado: { ic: "clock", cls: "ev-due", title: (e) => `${who(e)} alterou o prazo: ${fmtDate(e.data.old)} → ${fmtDate(e.data.new)}`, text: (e) => e.data.justification, label: "Justificativa" },
+  prazo_alterado: { ic: "clock", cls: "ev-due", title: (e) => `${who(e)} alterou o prazo final: ${fmtDate(e.data.old)} → ${fmtDate(e.data.new)}`, text: (e) => e.data.justification, label: "Justificativa" },
+  prazo_etapa: { ic: "stage", cls: "ev-due", title: (e) => `${who(e)} ${e.data.new ? `definiu o prazo da etapa em ${e.data.sector}: ${e.data.old ? fmtDate(e.data.old) + " → " : ""}${fmtDate(e.data.new)}` : `tirou o prazo da etapa em ${e.data.sector}`}`, text: (e) => e.data.justification, label: "Justificativa" },
 };
 function chatEvent(e) {
   const c = CHAT_EVENTS[e.type];
   const txt = c.text ? c.text(e) : null;
   return h("div", { class: "evmsg " + c.cls },
     h("div", { class: "et" }, h("span", { class: "tt" }, icon(c.ic, 14), h("span", null, c.title(e))), h("span", { class: "when" }, fmtDateTime(e.at))),
-    txt ? h("div", { class: "ex" }, h("span", { class: "lbl" }, c.label + ": "), txt) : null);
+    txt ? h("div", { class: "ex" }, h("span", { class: "lbl" }, c.label + ": "), txt) : null,
+    c.extra ? c.extra(e) : null,
+    e.data && e.data.files && e.data.files.length ? renderAttachments(e.data.files) : null);
 }
 
 function act(ctx, path, body, sound, msg) {
@@ -431,12 +444,13 @@ function describeTableDiff(diff) {
 function routeView(d) {
   const tl = d.timeline;
   return h("div", { class: "stack" },
-    h("div", { class: "small muted" }, "Tempo corrido. Trocar a pessoa dentro do mesmo setor não reinicia o tempo do setor; encaminhar não muda o prazo."),
+    h("div", { class: "small muted" }, "Tempo corrido. Trocar a pessoa dentro do mesmo setor não reinicia o tempo do setor; encaminhar não muda o prazo final. Cada etapa pode ter o próprio prazo."),
     h("div", { class: "timeline" }, tl.periods.map((p) => h("div", { class: "tl-item" + (p.current ? " current" : "") },
       h("div", { class: "head" }, sectorChip(p.sector), h("span", null, p.duration)),
       h("div", { class: "sub" }, `Entrada ${fmtDateTime(p.started_at)} · ${p.ended_at ? "saída " + fmtDateTime(p.ended_at) : "até agora"}`),
       p.forwarded_by ? h("div", { class: "sub" }, `Encaminhado por ${p.forwarded_by.name}${p.reason ? ": " + p.reason : ""}`) : null,
       p.arrived_overdue ? h("div", { class: "small", style: { color: "var(--red-fg)", fontWeight: 600 } }, "Chegou vencida a este setor") : null,
+      p.stage ? h("div", { class: `stage-line st-${stageLevel(p.stage)}` }, `Prazo da etapa ${fmtDate(p.stage.due)} · ${stageLabel(p.stage).replace("etapa ", "")}`) : null,
       p.assignments.map((a) => h("div", { class: "tl-person" }, `${a.user.name} · ${a.duration}${a.ended_at ? "" : " (atual)"}`))))),
     h("h3", null, "Tempo acumulado por setor"),
     h("div", null, tl.totals.map((t) => h("div", { class: "row", style: { justifyContent: "space-between", padding: "4px 0" } },
@@ -444,15 +458,16 @@ function routeView(d) {
 }
 
 const EVENT_TEXT = {
-  criada: (e) => `Demanda aberta: ${e.data.origin} → ${e.data.dest}, prazo ${fmtDate(e.data.due_date)}${e.data.request_source ? `, pedido feito em/por ${e.data.request_source}` : ""}.`,
-  atribuida: (e) => `Atribuída a ${e.data.to_user} (${e.data.sector})${e.data.fallback_primary ? ", gestor do setor" : ""}.`,
+  criada: (e) => `Demanda aberta: ${e.data.origin} → ${e.data.dest}, prazo ${fmtDate(e.data.due_date)}${e.data.request_source ? `, origem: ${e.data.request_source}` : ""}.`,
+  atribuida: (e) => `Atribuída a ${e.data.to_user} (${e.data.sector})${e.data.fallback_primary ? ", gerente do setor" : ""}.`,
   transferida: (e) => (e.data.internal ? `Encaminhada dentro de ${e.data.to_sector}: ${e.data.from_user} → ${e.data.to_user}.`
     : `Encaminhada de ${e.data.from_sector} (${e.data.from_user}) para ${e.data.to_sector} (${e.data.to_user})${e.data.arrived_overdue ? ", chegou vencida" : ""}.`) + ` Motivo: ${e.data.reason}.`,
-  prazo_alterado: (e) => `Prazo alterado de ${fmtDate(e.data.old)} para ${fmtDate(e.data.new)}. Justificativa: ${e.data.justification}`,
+  prazo_alterado: (e) => `Prazo final alterado de ${fmtDate(e.data.old)} para ${fmtDate(e.data.new)}. Justificativa: ${e.data.justification}`,
+  prazo_etapa: (e) => `Prazo da etapa em ${e.data.sector}: ${e.data.old ? fmtDate(e.data.old) : "sem prazo"} → ${e.data.new ? fmtDate(e.data.new) : "sem prazo"}. Justificativa: ${e.data.justification}`,
   status: (e) => `Status: ${STATUS[e.data.old] || e.data.old} → ${STATUS[e.data.new] || e.data.new}.`,
   resolvida: (e) => `Concluída pelo responsável ${e.data.on_time ? "dentro" : "fora"} do prazo, aguardando confirmação. Solução: ${e.data.resolution}`,
   concluida: (e) => `Concluída ${e.data.on_time ? "dentro" : "fora"} do prazo. Solução: ${e.data.resolution}`,
-  conclusao_confirmada: () => "Conclusão confirmada por quem criou.",
+  conclusao_confirmada: (e) => (e.data.auto ? `Conclusão confirmada automaticamente (sem resposta em ${e.data.hours}h).` : "Conclusão confirmada por quem criou."),
   devolvida: (e) => `Devolvida ao responsável. Motivo: ${e.data.reason}`,
   reaberta: (e) => `Reaberta. Motivo: ${e.data.reason}.`,
   cancelada: (e) => `Cancelada. Justificativa: ${e.data.reason}`,
@@ -484,25 +499,60 @@ function participantsView(ctx) {
 }
 
 // ---------------------------------------------------------------- diálogos
+const waitUploads = (att) => { if (att.isUploading()) throw new Error("Aguarde o envio dos anexos."); };
+
 function completeDialog(ctx) {
   const d = ctx.d;
   const ta = h("textarea", { rows: 4, placeholder: "Como foi resolvido?" });
+  const att = attachmentsPicker({ hint: "Ex.: o relatório pronto, o print do sistema, a planilha final (até 5 MB cada)." });
   const err = errorBox();
   const needs = d.creator.id !== state.me.id && d.creator.id !== d.assignee.id;
-  modal({ title: "Concluir demanda", body: h("div", { class: "stack" },
+  const body = h("div", { class: "stack" },
     needs ? h("div", { class: "notice" }, icon("flag", 15), `${d.creator.name} criou esta demanda e vai confirmar a conclusão.`) : null,
-    field("Solução", ta, { required: true }), err),
-  actions: [{ label: "Voltar" }, { label: "Concluir", class: "success", errBox: err, onClick: async () => {
-    ctx.update(await api.post(`/api/demands/${d.id}/complete`, { resolution: ta.value }), { sound: "acao" });
-    toast(needs ? "Concluída. Aguardando confirmação de quem criou." : "Demanda concluída.", "ok");
-  } }] });
+    field("Solução", ta, { required: true }), field("Anexos (opcional)", att.el), err);
+  att.bindPaste(body);
+  modal({ title: "Concluir demanda", body,
+    actions: [{ label: "Voltar" }, { label: "Concluir", class: "success", errBox: err, onClick: async () => {
+      waitUploads(att);
+      ctx.update(await api.post(`/api/demands/${d.id}/complete`, { resolution: ta.value, attachments: att.value }), { sound: "acao" });
+      toast(needs ? "Concluída. Aguardando confirmação de quem criou." : "Demanda concluída.", "ok");
+    } }] });
+}
+
+// Prazo da etapa: opcional; até o prazo final, a não ser que o prazo final já esteja vencido ou vencendo (aí avisa).
+function stageField(d, initial = "") {
+  const today = todayBR();
+  const inp = input({ type: "date", min: today, value: initial });
+  const note = h("div", { class: "small", style: { marginTop: "4px" } });
+  const daysTo = (x) => Math.round((new Date(x + "T12:00:00") - new Date(today + "T12:00:00")) / 86400000);
+  const finalTight = daysTo(d.due_date) <= 1;
+  if (!finalTight) inp.max = d.due_date;
+  const check = () => {
+    note.className = "small"; note.textContent = "";
+    if (!inp.value) { note.classList.add("muted"); note.textContent = finalTight ? `Sem prazo próprio: vale o prazo final (${fmtDate(d.due_date)}, ${daysTo(d.due_date) < 0 ? "já vencido" : "vencendo"}).` : `Sem prazo próprio: vale o prazo final (${fmtDate(d.due_date)}).`; return true; }
+    if (inp.value < today) { note.classList.add("warn-txt"); note.textContent = "O prazo da etapa não pode ser anterior a hoje."; return false; }
+    if (inp.value > d.due_date) {
+      if (!finalTight) { note.classList.add("warn-txt"); note.textContent = `Não pode passar do prazo final (${fmtDate(d.due_date)}).`; return false; }
+      note.classList.add("warn-txt"); note.textContent = `Atenção: passa do prazo final (${fmtDate(d.due_date)}), que já está ${daysTo(d.due_date) < 0 ? "vencido" : "vencendo"}. Vai aparecer em destaque e quem pediu vai ver.`; return true;
+    }
+    note.classList.add("muted"); note.textContent = `O setor de destino terá até ${fmtDate(inp.value)}; o prazo final continua ${fmtDate(d.due_date)}.`; return true;
+  };
+  inp.addEventListener("input", check); check();
+  const quick = h("div", { class: "row", style: { gap: "4px", marginTop: "4px" } }, [1, 2, 3, 5].map((n) => {
+    const dt = new Date(today + "T12:00:00"); dt.setDate(dt.getDate() + n);
+    const v = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+    return (finalTight || v <= d.due_date) ? h("button", { type: "button", class: "btn sm ghost", onclick: () => { inp.value = v; check(); } }, `+${n} dia${n > 1 ? "s" : ""}`) : null;
+  }), h("button", { type: "button", class: "btn sm ghost", onclick: () => { inp.value = ""; check(); } }, "Sem prazo próprio"));
+  return { el: h("div", null, inp, quick, note), get value() { return inp.value || null; }, check };
 }
 
 async function forwardDialog(ctx) {
   const d = ctx.d;
   const sector = select(state.sectors.map((s) => ({ value: s.id, label: s.name })), d.dest.id);
   const person = select([{ value: "", label: "Carregando…" }], "");
-  const reason = h("textarea", { rows: 3, placeholder: "Por que está encaminhando?" });
+  const reason = h("textarea", { rows: 3, placeholder: "Por que está encaminhando? O que o próximo setor precisa fazer?" });
+  const stage = stageField(d);
+  const att = attachmentsPicker();
   const err = errorBox();
   const loadPeople = async () => {
     const s = sectorById(sector.value);
@@ -514,24 +564,50 @@ async function forwardDialog(ctx) {
   };
   sector.addEventListener("change", loadPeople);
   await loadPeople();
-  modal({ title: "Encaminhar demanda", body: h("div", { class: "stack" },
+  const body = h("div", { class: "stack" },
     h("div", { class: "grid2" }, field("Para o setor", sector, { required: true }), field("Para a pessoa", person, { required: true })),
     field("Motivo", reason, { required: true }),
-    h("div", { class: "small muted" }, `O prazo continua ${fmtDate(d.due_date)}. O tempo em ${d.dest.name} é registrado no percurso.`), err),
-  actions: [{ label: "Cancelar" }, { label: "Encaminhar", class: "primary", errBox: err, onClick: async () => {
-    try {
-      ctx.update(await api.post(`/api/demands/${d.id}/transfer`, { sector_id: Number(sector.value), user_id: person.value ? Number(person.value) : null, reason: reason.value, version: d.version }), { sound: "acao" });
-      toast("Demanda encaminhada.", "ok");
-    } catch (e) { if (e.status === 409) await ctx.reload(); throw e; }
+    field("Prazo desta etapa (opcional)", stage.el),
+    field("Anexos (opcional)", att.el),
+    h("div", { class: "small muted" }, `O prazo final continua ${fmtDate(d.due_date)}. O tempo em ${d.dest.name} é registrado no percurso.`), err);
+  att.bindPaste(body);
+  modal({ title: "Encaminhar demanda", body,
+    actions: [{ label: "Cancelar" }, { label: "Encaminhar", class: "primary", errBox: err, onClick: async () => {
+      if (!stage.check()) throw new Error("Confira o prazo da etapa.");
+      waitUploads(att);
+      try {
+        ctx.update(await api.post(`/api/demands/${d.id}/transfer`, { sector_id: Number(sector.value), user_id: person.value ? Number(person.value) : null, reason: reason.value, version: d.version,
+          stage_due: stage.value, attachments: att.value }), { sound: "acao" });
+        toast("Demanda encaminhada.", "ok");
+      } catch (e) { if (e.status === 409) await ctx.reload(); throw e; }
+    } }] });
+}
+
+function stageDueDialog(ctx) {
+  const d = ctx.d;
+  const stage = stageField(d, d.stage ? d.stage.due : "");
+  const just = h("textarea", { rows: 3 });
+  const err = errorBox();
+  modal({ title: "Prazo desta etapa", body: h("div", { class: "stack" },
+    h("div", { class: "small muted" }, `Etapa atual: ${d.dest.name}${d.current_period && d.current_period.forwarded_by ? `, encaminhada por ${d.current_period.forwarded_by.name}` : ""}. Prazo final: ${fmtDate(d.due_date)}.`),
+    field("Prazo da etapa", stage.el), field("Justificativa", just, { required: true }), err),
+  actions: [{ label: "Cancelar" }, { label: "Salvar", class: "primary", errBox: err, onClick: async () => {
+    if (!stage.check()) throw new Error("Confira o prazo da etapa.");
+    try { ctx.update(await api.post(`/api/demands/${d.id}/stage-due`, { stage_due: stage.value, justification: just.value, version: d.version })); toast("Prazo da etapa salvo.", "ok"); }
+    catch (e) { if (e.status === 409) await ctx.reload(); throw e; }
   } }] });
 }
 
-function textDialog(ctx, title, label, path, key, okLabel, note, danger = false) {
+function textDialog(ctx, title, label, path, key, okLabel, note, danger = false, withFiles = false) {
   const ta = h("textarea", { rows: 4 });
+  const att = withFiles ? attachmentsPicker() : null;
   const err = errorBox();
-  modal({ title, body: h("div", { class: "stack" }, note ? h("div", { class: "notice small" }, note) : null, field(label, ta, { required: true }), err),
+  const body = h("div", { class: "stack" }, note ? h("div", { class: "notice small" }, note) : null, field(label, ta, { required: true }), att ? field("Anexos (opcional)", att.el) : null, err);
+  if (att) att.bindPaste(body);
+  modal({ title, body,
     actions: [{ label: "Voltar" }, { label: okLabel, class: danger ? "danger primary" : "primary", errBox: err, onClick: async () => {
-      ctx.update(await api.post(`/api/demands/${ctx.d.id}/${path}`, { [key]: ta.value }), { sound: "acao" });
+      if (att) waitUploads(att);
+      ctx.update(await api.post(`/api/demands/${ctx.d.id}/${path}`, { [key]: ta.value, ...(att ? { attachments: att.value } : {}) }), { sound: "acao" });
     } }] });
 }
 
@@ -549,17 +625,19 @@ function dueDialog(ctx) {
   } }] });
 }
 
-function editDialog(ctx) {
+async function editDialog(ctx) {
+  if (!state.origens) state.origens = await api.get("/api/origens").then((r) => r.origens).catch(() => []);
   const d = ctx.d;
   const title = input({ value: d.title });
-  const source = input({ value: d.request_source || "", maxlength: 120 });
+  const sourceBox = comboInput(state.origens || [], { value: d.request_source || "" });
+  const source = sourceBox.input;
   const prio = select(Object.entries(PRIORITY).map(([k, v]) => ({ value: k, label: v })), d.priority);
   const just = input({ value: d.priority_justification || "" });
   const editor = createEditor({ initial: d.description });
   const baseline = JSON.stringify(editor.getValue());
   const err = errorBox();
   modal({ title: "Editar demanda", wide: true, body: h("div", { class: "stack" },
-    h("div", { class: "grid2" }, field("Demanda", title, { required: true }), field("Pedido feito em / por", source)),
+    h("div", { class: "grid2" }, field("Demanda", title, { required: true }), field("Origem do pedido", sourceBox)),
     h("div", { class: "grid2" }, field("Prioridade", prio), field("Justificativa (se urgente)", just)), field("Descrição", editor.el, { required: true }), err),
   actions: [{ label: "Cancelar" }, { label: "Salvar", class: "primary", errBox: err, onClick: async () => {
     const body = { version: d.version, title: title.value, priority: prio.value, priority_justification: just.value || null, request_source: source.value };

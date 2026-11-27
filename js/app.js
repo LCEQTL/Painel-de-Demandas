@@ -11,6 +11,7 @@ import * as demands from "./views/demands.js";
 import * as team from "./views/team.js";
 import * as dashboard from "./views/dashboard.js";
 import * as admin from "./views/admin.js";
+import * as setor from "./views/setor.js";
 
 const app = document.getElementById("app");
 const HOME = "inicio";
@@ -23,11 +24,13 @@ const ROUTES = [
   ["cadastro", demands.newDemand],
   ["demandas/:id", demands.detailPage],
   ["perfil", auth.profile],
+  ["gestao/setor", setor.sectorPage, "gestao"],
   ["gestao/indicadores", dashboard.dashboardPage, "gestao"],
   ["gestao/equipe", team.teamPage, "gestao"],
   ["admin/setores", admin.sectorsPage, "admin"],
   ["admin/pessoas", admin.peoplePage, "admin"],
   ["admin/avisos", admin.avisosPage, "admin"],
+  ["admin/origens", admin.origensPage, "admin"],
   ["admin/dados", admin.dataPage, "admin"],
   ["admin/config", admin.configPage, "admin"],
 ];
@@ -37,7 +40,7 @@ const LEGACY = {
   "meu-trabalho": HOME, modelos: HOME, convites: HOME, novas: HOME, minhas: "acompanhamento", criadas: "acompanhamento",
   acompanho: "acompanhamento", todas: "acompanhamento", setor: "acompanhamento", demandas: "acompanhamento",
   "demandas/nova": "cadastro", "nova-demanda": "cadastro", painel: "gestao/indicadores", equipe: "gestao/equipe",
-  gestao: "gestao/indicadores", admin: "admin/setores", "admin/exportacoes": "admin/avisos", "admin/notificacoes": "admin/avisos", "admin/armazenamento": "admin/dados",
+  gestao: "gestao/setor", admin: "admin/setores", "admin/exportacoes": "admin/avisos", "admin/notificacoes": "admin/avisos", "admin/armazenamento": "admin/dados",
 };
 
 function parseHash() {
@@ -65,9 +68,9 @@ function navItems() {
   const items = [
     { path: HOME, label: "Início", icon: "home", tone: "t-home", count: state.attention, match: (p) => p === HOME },
     { path: "acompanhamento", label: "Acompanhamento", icon: "track", tone: "t-track", match: (p) => p === "acompanhamento" || p.startsWith("demandas/") },
-    { path: "cadastro", label: "Cadastro", icon: "plus", tone: "t-new", match: (p) => p === "cadastro" },
+    { path: "cadastro", label: "Nova demanda", icon: "plus", tone: "t-new", match: (p) => p === "cadastro" },
   ];
-  if (isManager() || isAdmin()) items.push({ path: "gestao/indicadores", label: "Gestão", icon: "chart", tone: "t-mgmt", match: (p) => p.startsWith("gestao") });
+  if (isManager() || isAdmin()) items.push({ path: "gestao/setor", label: "Gestão", icon: "chart", tone: "t-mgmt", match: (p) => p.startsWith("gestao") });
   if (isAdmin()) items.push({ path: "admin/setores", label: "Administração", icon: "gear", tone: "t-admin", match: (p) => p.startsWith("admin") });
   return items;
 }
@@ -103,10 +106,13 @@ function buildShell() {
   const renderSound = () => { clear(soundBtn).appendChild(icon(soundOn() ? "sound" : "mute", 19)); soundBtn.title = soundOn() ? "Sons ligados (clique para silenciar)" : "Sons desligados"; soundBtn.setAttribute("aria-label", soundBtn.title); };
   soundBtn.addEventListener("click", () => { setSound(!soundOn()); renderSound(); play("envio"); });
   renderSound();
-  const roleTxt = isAdmin() ? "Administrador" : isManager() ? "Gestor" : "Colaborador";
+  const roleTxt = isAdmin() ? "Administrador" : (state.me.roles.primary_sector_ids || []).length ? "Gerente" : isManager() ? "Executivo/Líder" : "Colaborador";
+  const te = state.me.token_expires;
+  const daysTok = te ? Math.round((new Date(te + "T12:00:00") - new Date()) / 86400000) : null;
+  const tokWarn = daysTok !== null && daysTok <= 15 ? h("a", { class: "tok-warn", href: "#/admin/config", title: "O token do GitHub vence em breve. Troque pelo instalador." }, daysTok < 0 ? "Token do GitHub vencido" : `Token vence em ${daysTok} dia(s)`) : null;
   const top = h("header", { class: "topbar" },
     h("button", { class: "iconbtn mobile-nav-toggle", "aria-label": "Abrir menu", onclick: () => sidebar.classList.toggle("open") }, icon("menu", 20)),
-    brand(), h("span", { class: "grow" }), soundBtn, h("span", { class: "role-pill" }, roleTxt), user);
+    brand(), h("span", { class: "grow" }), tokWarn, soundBtn, h("span", { class: "role-pill" }, roleTxt), user);
   const root = h("div", null, top, h("div", { class: "layout" }, sidebar, main));
   onCounts(() => renderNav(sidebar, parseHash().path));
   return { root, main, sidebar };
@@ -170,20 +176,21 @@ async function route() {
 
 // Tela quando o painel não abre (sem chave, chave errada, sem internet).
 function bootScreen(e) {
-  const keyErr = e instanceof BootError && e.kind === "key";
-  const inp = h("input", { type: "password", placeholder: "Cole aqui a chave de acesso", autocomplete: "off", id: "boot-key" });
-  const msg = h("div", { class: "form-error" + (keyErr || !(e instanceof BootError) ? "" : " hidden") }, e.message);
+  const keyErr = e instanceof BootError && (e.kind === "key" || e.kind === "nokey");
+  const inp = h("input", { type: "text", placeholder: "Palavra-chave", autocomplete: "off", autocapitalize: "off", spellcheck: "false", id: "boot-key" });
+  const msg = h("div", { class: "form-error" + ((keyErr && e.kind === "key") || !(e instanceof BootError) || e.kind === "config" ? "" : " hidden") }, e.message);
   const btn = h("button", { class: "btn primary", type: "submit" }, "Abrir o painel");
-  const form = h("form", { class: "stack" }, msg, keyErr ? h("div", { class: "f" }, h("label", { for: "boot-key" }, h("span", null, "Chave de acesso")), inp) : null,
+  const form = h("form", { class: "stack" }, msg, keyErr ? h("div", { class: "f" }, h("label", { for: "boot-key" }, h("span", null, "Palavra-chave do painel")), inp) : null,
     keyErr ? btn : h("button", { class: "btn primary", type: "button", onclick: () => route() }, "Tentar de novo"),
-    h("div", { class: "small muted" }, keyErr ? "A chave vem no link que o administrador compartilhou. Depois do primeiro acesso, este navegador lembra dela." : ""));
+    h("div", { class: "small muted" }, keyErr ? "Ela vem no link de acesso. Depois do primeiro acesso, este navegador lembra dela." : ""));
   form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     btn.disabled = true; btn.textContent = "Abrindo…";
     try { await ready(inp.value.trim()); route(); }
     catch (err) { msg.textContent = err.message; msg.classList.remove("hidden"); btn.disabled = false; btn.textContent = "Abrir o painel"; }
   });
-  return h("div", { class: "auth-wrap" }, h("div", { class: "auth" }, brand(), h("div", { class: "panel pad stack" }, h("h1", null, "Painel de Demandas"), form)));
+  if (keyErr) setTimeout(() => inp.focus(), 30);
+  return h("div", { class: "auth-wrap" }, h("div", { class: "auth" }, brand(), h("div", { class: "panel pad stack" }, h("h1", null, "Bem-vindo(a)"), form)));
 }
 
 export async function reloadMe() { state.me = await api.get("/api/auth/me"); }

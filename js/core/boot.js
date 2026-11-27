@@ -9,14 +9,23 @@ let state = { promise: null, store: null, server: null, cfg: null, error: null }
 
 export class BootError extends Error { constructor(kind, message) { super(message); this.kind = kind; } }
 
-// A chave pode vir no link: ...#k=CHAVE ou ...#/demandas/12?k=CHAVE. Depois de lida, sai da barra de endereço.
+// A chave pode vir no link: ...?k=CHAVE (preferido: sobrevive ao Outlook/Teams), ...#k=CHAVE ou ...#/demandas/12?k=CHAVE.
+// Depois de lida, sai da barra de endereço e fica guardada (na memória e neste navegador).
+let urlKey = null;
 function keyFromUrl() {
+  if (urlKey) return urlKey;
+  let k = null;
+  const qs = new URLSearchParams(location.search);
+  if (qs.get("k")) { k = qs.get("k"); qs.delete("k"); }
   const m = /[#?&]k=([^&#]+)/.exec(location.hash);
-  if (!m) return null;
-  const k = decodeURIComponent(m[1]);
-  const clean = location.hash.replace(/([?&])k=[^&#]+&?/, "$1").replace(/[?&]$/, "").replace(/^#k=[^&]*&?/, "#");
-  history.replaceState(null, "", location.pathname + location.search + (clean === "#" ? "" : clean));
-  return k;
+  let hash = location.hash;
+  if (m) { k = k || decodeURIComponent(m[1]); hash = hash.replace(/([?&])k=[^&#]+&?/, "$1").replace(/[?&]$/, "").replace(/^#k=[^&]*&?/, "#"); }
+  if (k) {
+    const q = qs.toString();
+    history.replaceState(null, "", location.pathname + (q ? "?" + q : "") + (hash === "#" ? "" : hash));
+    urlKey = k.trim();
+  }
+  return urlKey;
 }
 function storedKey() { try { return localStorage.getItem(KEY_STORAGE); } catch (_) { return null; } }
 function saveKey(k) { try { localStorage.setItem(KEY_STORAGE, k); } catch (_) { /* sem armazenamento local */ } }
@@ -28,12 +37,12 @@ async function start(passphrase) {
     return r.json();
   });
   state.cfg = cfg;
-  const pass = passphrase || keyFromUrl() || storedKey();
-  if (!pass) throw new BootError("key", "Abra o painel pelo link de acesso, que já traz a chave.");
+  const pass = (passphrase || keyFromUrl() || storedKey() || "").trim();
+  if (!pass) throw new BootError("nokey", "");
   const key = await deriveKey(pass, cfg.salt, cfg.kdf_iterations);
   let token;
   try { token = await decryptText(key, cfg.token_enc); }
-  catch (_) { forgetKey(); throw new BootError("key", "Chave de acesso incorreta. Use o link de acesso mais recente."); }
+  catch (_) { forgetKey(); urlKey = null; throw new BootError("key", "Palavra-chave incorreta. Confira com o administrador ou use o link de acesso mais recente."); }
   saveKey(pass);
   const store = createStore(cfg, key, token);
   await store.sync({ force: true });

@@ -60,7 +60,7 @@ export async function register(app) {
       field("Telefone pessoal", f.phone_personal)),
     h("div", null, h("div", { class: "small muted", style: { marginBottom: "6px" } }, "Setor(es) em que você trabalha *"),
       h("div", { class: "row" }, checks.map(({ s, cb }) => h("label", { class: "checkbox" }, cb, s.name)))),
-    h("div", { class: "notice info small" }, "Todo cadastro entra como colaborador. O perfil de gestor é definido pelo administrador."),
+    h("div", { class: "notice info small" }, "Todo cadastro entra como colaborador. Gerente e executivo/líder são definidos pelo administrador."),
     err, h("div", { class: "row" }, btn, h("a", { href: "#/login" }, "Voltar ao login")));
   form.addEventListener("submit", busy(btn, async () => {
     if (f.password.value !== f.password2.value) throw new Error("As senhas não conferem.");
@@ -124,7 +124,7 @@ export async function profile(main) {
           field("Código curto (usado no código das demandas)", input({ value: me.short_code, disabled: true }))),
         err, h("div", null, save),
         h("h2", null, "Meus setores"),
-        me.memberships.length ? h("div", null, me.memberships.map((m) => h("span", { class: "chip" }, `${m.sector_name} · ${m.is_primary ? "Gerente principal" : m.role_label}`)))
+        me.memberships.length ? h("div", null, me.memberships.map((m) => h("span", { class: "chip" }, `${m.sector_name} · ${m.role_label}`)))
           : h("div", { class: "muted" }, "Nenhum setor vinculado."),
         me.roles.is_admin ? h("div", { class: "notice info small" }, "Você é o administrador do sistema.") : null),
       h("div", { class: "panel pad stack" }, h("h2", null, "Trocar senha"), passwordForm(async () => toast("Senha alterada. Outras sessões foram encerradas.", "ok")))));

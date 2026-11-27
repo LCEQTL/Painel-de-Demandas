@@ -9,6 +9,7 @@ export function makeGitHub({ owner, repo, branch = "dados", token, apiBase = "ht
   const base = apiBase.replace(/\/$/, "");
   const R = `/repos/${owner}/${repo}`;
   const etags = new Map();
+  let tokenExpiry = null; // o GitHub informa a validade do token em cada resposta (quando o navegador deixa ler)
 
   async function req(method, path, body, { etag = false, accept } = {}) {
     const headers = { Accept: accept || "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
@@ -33,11 +34,14 @@ export function makeGitHub({ owner, repo, branch = "dados", token, apiBase = "ht
       throw new GitHubError(res.status, msg, data);
     }
     if (etag && res.headers.get("ETag")) etags.set(key, { etag: res.headers.get("ETag"), data });
+    const exp = res.headers.get("github-authentication-token-expiration");
+    if (exp) tokenExpiry = exp;
     return { notModified: false, data };
   }
 
   return {
     owner, repo, branch, req,
+    get tokenExpiry() { return tokenExpiry; },
     async head(ref = branch) {
       const r = await req("GET", `${R}/git/ref/heads/${ref}`, undefined, { etag: true });
       return { sha: r.data.object.sha, changed: !r.notModified };

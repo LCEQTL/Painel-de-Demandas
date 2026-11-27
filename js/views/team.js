@@ -1,9 +1,9 @@
-// Meu setor / Minha equipe: membros, cadastro de colaboradores pelos gestores e presença.
+// Meu setor / Minha equipe: membros, cadastro de colaboradores pelos gerentes e executivos/líderes e presença.
 import { api, qs } from "../api.js";
 import { h, clear, fmtDateTime, empty, errorState, toast, busy, errorBox, modal, field, input, select, loading, subnav, sectorChip } from "../ui.js";
 import { state, navigate, isAdmin, isManager } from "../state.js";
 
-export const GESTAO = [["gestao/indicadores", "Indicadores"], ["gestao/equipe", "Equipe"]];
+export const GESTAO = [["gestao/setor", "Demandas do setor"], ["gestao/indicadores", "Indicadores"], ["gestao/equipe", "Equipe"]];
 
 export async function teamPage(main) {
   const groups = await api.get("/api/team");
@@ -12,7 +12,7 @@ export async function teamPage(main) {
   for (const g of groups) {
     const rows = g.people.map((p) => h("tr", null,
       h("td", null, h("div", { class: "title" }, p.name), g.can_manage && p.username ? h("div", { class: "code" }, p.username) : null),
-      h("td", null, p.is_primary ? "Gerente principal" : ({ gerente: "Gerente", gestor: "Gestor" })[p.role] || "Colaborador"),
+      h("td", null, ({ gerente: "Gerente", lider: "Executivo/Líder", gestor: "Executivo/Líder" })[p.role] || "Colaborador"),
       g.can_manage ? h("td", { class: "hide-sm" }, p.phone_corp || "") : null,
       g.can_manage ? h("td", { class: "hide-sm" }, fmtDateTime(p.last_login_at)) : null,
       g.can_manage ? h("td", null, !p.is_manager || isAdmin() ? h("button", { class: "btn sm ghost danger", onclick: () => removeDialog(g.sector, p) }, "Remover do setor") : null) : null));
@@ -39,7 +39,7 @@ export async function presenceTable(box) {
     const res = await api.get("/api/presence");
     clear(box).append(
       h("div", { style: { padding: "10px 12px" } }, h("h2", null, `Presença (${res.people.length})`),
-        h("div", { class: "small muted" }, `Aproximada: “online” significa atividade nos últimos ${res.online_window_minutes} minutos. Online não significa leitura de demanda. Visível ao administrador e aos gerentes e gestores.`)),
+        h("div", { class: "small muted" }, `Aproximada: “online” significa atividade nos últimos ${res.online_window_minutes} minutos. Online não significa leitura de demanda. Visível ao administrador e aos gerentes e executivos/líderes.`)),
       res.people.length ? h("div", { class: "scroll-x" }, h("table", { class: "list" },
         h("thead", null, h("tr", null, h("th", null, "Nome"), h("th", null, "Presença"), h("th", null, "Último login"), h("th", { class: "hide-sm" }, "Última atividade"), h("th", { class: "hide-sm" }, "Motivo do acesso"))),
         h("tbody", null, res.people.map((p) => h("tr", null, h("td", null, p.name),
@@ -96,7 +96,7 @@ function addExistingDialog(sector) {
 
 export function removeDialog(sector, person, onDone) {
   const err = errorBox();
-  const strategy = select([{ value: "primary_manager", label: "Gerente principal do setor" }, { value: "user", label: "Outra pessoa do setor" }], "primary_manager");
+  const strategy = select([{ value: "primary_manager", label: "Gerente do setor" }, { value: "user", label: "Outra pessoa do setor" }], "primary_manager");
   const target = select([{ value: "", label: "—" }], "");
   const targetWrap = field("Pessoa que recebe as demandas", target);
   targetWrap.classList.add("hidden");

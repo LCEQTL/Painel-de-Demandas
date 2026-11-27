@@ -4,6 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { deriveKey, decrypt, encryptJSON } from "../../js/core/crypto.js";
 import { computeAvisos } from "../../js/core/avisos.js";
+import { opAutoConfirm, conf } from "../../js/core/logic.js";
+import crypto from "node:crypto";
 
 const SITE = process.env.SITE_DIR || "site";
 const DADOS = process.env.DADOS_DIR || "dados";
@@ -25,17 +27,52 @@ try { users = (await read("db/pessoas.enc")) || []; } catch (_) { fail("não foi
 const db = { sectors: (await read("db/setores.enc")) || [], config: (await read("db/config.enc")) || {}, users: new Map(users.map((u) => [u.id, u])), demands: new Map(), msgIndex: new Map() };
 const ddir = path.join(DADOS, "db/demandas");
 if (fs.existsSync(ddir)) for (const f of fs.readdirSync(ddir)) if (f.endsWith(".enc")) { const d = await read("db/demandas/" + f); db.demands.set(d.id, d); }
+// mensagens: só os nomes dos arquivos (data e autor), sem decifrar o conteúdo
+db.msgIndex = new Map();
+const mdir = path.join(DADOS, "db/mensagens");
+if (fs.existsSync(mdir)) for (const did of fs.readdirSync(mdir)) {
+  const list = [];
+  for (const f of fs.readdirSync(path.join(mdir, did))) { const m = /^(\d{13})-(\d+)-\w+\.enc$/.exec(f); if (m) list.push({ at: new Date(Number(m[1])).toISOString(), authorId: Number(m[2]) }); }
+  db.msgIndex.set(Number(did), list.sort((a, b) => (a.at < b.at ? -1 : 1)));
+}
 const prev = (await read("avisos/estado.enc")) || null;
 
 const now = process.env.AGORA || new Date().toISOString();
-const { emails, state, digest } = computeAvisos(db, prev, now, { appUrl: cfg.app_url, key: pass });
-console.log(`${db.demands.size} demandas lidas. ${emails.length} e-mail(s) a enviar${digest ? " (inclui o resumo diário)" : ""}.`);
+const { emails, state, digest, autoConfirm } = computeAvisos(db, prev, now, { appUrl: cfg.app_url, key: pass });
+const nTeams = emails.filter((e) => e.canais.includes("teams")).length, nMail = emails.filter((e) => e.canais.includes("email")).length;
+console.log(`${db.users.size} pessoas e ${db.demands.size} demandas lidas. ${emails.length} notificação(ões): ${nMail} por e-mail, ${nTeams} pelo Teams${digest ? " (inclui o resumo diário)" : ""}.`);
+if (!prev) console.log("Primeira rodada: os acontecimentos anteriores foram marcados como vistos (sem avisos retroativos).");
+
+// Confirmação automática: grava pela API (com o sha do arquivo) para não atropelar quem estiver mexendo na mesma demanda.
+const ghToken = process.env.GH_TOKEN, selfRepo = process.env.GITHUB_REPOSITORY;
+if (autoConfirm.length && ghToken && selfRepo) {
+  const hours = conf(db, "flow").auto_confirm_hours;
+  let ok = 0;
+  for (const id of autoConfirm) {
+    const rel = `db/demandas/${id}.enc`;
+    const raw = fs.readFileSync(path.join(DADOS, rel));
+    const sha = crypto.createHash("sha1").update(`blob ${raw.length}\0`).update(raw).digest("hex");
+    const d = await read(rel);
+    if (!opAutoConfirm(db, d, hours, now)) continue;
+    const res = await fetch(`${API}/repos/${selfRepo}/contents/${rel}`, { method: "PUT", headers: { Authorization: `Bearer ${ghToken}`, Accept: "application/vnd.github+json", "Content-Type": "application/json", "User-Agent": "painel-avisos" },
+      body: JSON.stringify({ message: "Confirmação automática", branch: "dados", sha, content: Buffer.from(await encryptJSON(key, d)).toString("base64") }) });
+    if (res.ok) ok++; else console.log(`Aviso: uma confirmação automática ficou para a próxima rodada (GitHub ${res.status}).`);
+  }
+  console.log(`${ok} demanda(s) confirmada(s) automaticamente.`);
+  state.runs[0].autoconfirmadas = ok;
+}
 
 const token = process.env.AVISOS_TOKEN;
 const repo = cfg.avisos_repo;
 async function gh(method, p, body) {
   const res = await fetch(API + p, { method, headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "Content-Type": "application/json", "User-Agent": "painel-avisos" }, body: body ? JSON.stringify(body) : undefined });
-  if (!res.ok) throw new Error(`GitHub respondeu ${res.status} em ${method} ${p.replace(/\?.*/, "")}`);
+  if (!res.ok) {
+    let why = "";
+    if (res.status === 401) why = " (AVISOS_TOKEN inválido ou vencido)";
+    if (res.status === 403 || res.status === 404) why = " (o AVISOS_TOKEN precisa de Issues: leitura e escrita no repositório de avisos)";
+    if (res.status === 422) why = " (confira o avisos_assignee: precisa ser o dono do repositório de avisos)";
+    throw new Error(`GitHub respondeu ${res.status} em ${method} ${p.replace(/\?.*/, "")}${why}`);
+  }
   return res.status === 204 ? null : res.json();
 }
 if (emails.length) {
@@ -49,11 +86,11 @@ if (emails.length) {
   if (cur.length) chunks.push(cur);
   const stamp = new Date(new Date(now).getTime() - 3 * 3600000).toISOString().slice(0, 16).replace("T", " ");
   for (let i = 0; i < chunks.length; i++) {
-    await gh("POST", `/repos/${repo}/issues`, {
+    try { await gh("POST", `/repos/${repo}/issues`, {
       title: `Painel-Avisos ${stamp} (${chunks[i].length})${chunks.length > 1 ? ` parte ${i + 1}/${chunks.length}` : ""}`,
       body: JSON.stringify({ origem: "Painel de Demandas", notificacoes: chunks[i] }),
       assignees: [cfg.avisos_assignee],
-    });
+    }); } catch (e) { fail(`não foi possível abrir a issue de avisos: ${e.message}. O estado não foi salvo; a próxima rodada tenta de novo.`); }
   }
   console.log(`${chunks.length} issue(s) aberta(s) no repositório de avisos.`);
 }

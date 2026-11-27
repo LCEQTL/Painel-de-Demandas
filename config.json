@@ -2,11 +2,11 @@
   "owner": "LCEQTL",
   "repo": "Painel-de-Demandas",
   "dataBranch": "dados",
-  "salt": "ZfCw/Ea3H2kdWvgdnMcSxA==",
+  "salt": "g+gIy0mx2BXpx89UvoHQ+w==",
   "kdf_iterations": 300000,
-  "token_enc": "UEQxAOgh4g3QJsGIbbQptrT/EmLkfDwwkcOj3IpZjlbMAlkMZcdmKw2Zbb+5Fn2F5joSwL9LaCsIbcqnixoNVT/VwmkbPDj1O+jN6qLbndm9O9+J5DRkGBzW3Q+VcnnXQcWXpC0N2V8UNE3GUaX7aq4TVP5U1/9GivdPzNo=",
+  "token_enc": "UEQxABettlXIpB9UhG3bZR0IkCw64/djVnvPodQRWuwo+tVacw8F/Yw5NIoITrg2FHa+zNeMHyk80UeIBJ5gDU6FkZ3blPDEr2g94vU4BFC3XAJw7XgHNkgxO8l6GvETNKq1Tbf7WaJmKKiY8AjKfvhFmVreFhewjbTHO1s=",
   "app_url": "https://lceqtl.github.io/Painel-de-Demandas/",
   "avisos_repo": "LCEQTL/painel-avisos",
   "avisos_assignee": "LCEQTL",
-  "instalado_em": "2026-11-25T15:04:18.328Z"
+  "instalado_em": "2026-11-27T13:21:10.086Z"
 }

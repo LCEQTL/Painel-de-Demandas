@@ -1,559 +1,1124 @@
-<title>Painel de Demands EQTL PI SUL</title>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel de Demandas</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-  /* Mesma linguagem da apresentação de Reincidência: azul-marinho, faixa amarela, cartões claros. Visual único (claro) por escolha. */
-  :root{--nv:#1f2733;--nv2:#2c3646;--ac:#ffc20e;--bg:#f4f5f7;--ln:#dde1e7;--tx:#1f2733;--mt:#5f6b7a;--ok:#18794e;--late:#b91c1c;--conf:#a35a00;--open:#2563c9;
-    --rel:#2563eb;--stc:#0891b2;--obr:#db2777;color-scheme:light}
-  *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{margin:0;font-family:"Segoe UI",Roboto,Arial,sans-serif;color:var(--tx);background:#fff;font-size:16px;line-height:1.6}
-  body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--nv)}
-  a{color:inherit}
-  .wrap{max-width:1180px;margin:0 auto;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
-  @media (max-width:600px){.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}
-  nav.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(31,39,51,.97);color:#fff}
-  nav.top .wrap{display:flex;align-items:center;gap:22px;min-height:56px;flex-wrap:wrap}
-  nav.top b{font-weight:600;font-size:15px;display:flex;align-items:center;gap:10px}
-  nav.top b i{width:5px;height:20px;background:var(--ac);border-radius:2px;display:inline-block}
-  nav.top .lk{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
-  nav.top .lk a{color:#c3cad5;text-decoration:none;font-size:14px;padding:6px 10px;border-radius:6px}
-  nav.top .lk a:hover,nav.top .lk a:focus-visible{color:#fff;background:var(--nv2)}
-  @media (max-width:900px){nav.top .lk{display:none}}
-  header.hero{background:var(--nv);color:#fff;padding-block:84px 92px;border-bottom:6px solid var(--ac)}
-  .eyebrow{font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ac);font-weight:600}
-  .hero h1{font-size:46px;line-height:1.1;margin:14px 0 18px;font-weight:700;letter-spacing:-.5px;max-width:860px;text-wrap:balance}
-  .hero p{font-size:19px;color:#c9d0da;max-width:740px;margin:0}
-  .hero .facts{display:flex;gap:40px;margin-top:46px;flex-wrap:wrap}
-  .hero .facts div b{display:block;font-size:30px;color:#fff;font-weight:700}
-  .hero .facts div span{font-size:14px;color:#9aa4b2}
-  section{padding-block:76px;border-bottom:1px solid var(--ln)}
-  section.alt{background:var(--bg)}
-  h2{font-size:30px;margin:8px 0 12px;letter-spacing:-.3px;text-wrap:balance}
-  .lead{font-size:18px;color:var(--mt);max-width:780px;margin:0 0 36px}
-  .g2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
-  .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-  .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
-  @media (max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}.hero h1{font-size:34px}}
-  .g2>*,.g3>*,.g4>*{min-width:0}
-  .card{background:#fff;border:1px solid var(--ln);border-radius:10px;padding:22px}
-  .card h3{margin:0 0 8px;font-size:17px}
-  .card p{margin:0;color:var(--mt);font-size:15px}
-  .num{display:inline-flex;width:30px;height:30px;border-radius:50%;background:var(--nv);color:#fff;align-items:center;justify-content:center;font-weight:700;font-size:14px;margin-bottom:12px}
-  .pain{border-left:4px solid #c62828}
-  .pain h3{color:#8a1c1c}
-  .step{position:relative}
-  .step:not(:last-child):after{content:"";position:absolute;right:-14px;top:36px;width:10px;height:10px;border-top:2px solid #98a2b3;border-right:2px solid #98a2b3;transform:rotate(45deg)}
-  @media (max-width:900px){.step:after{display:none}}
-  .feat h3{display:flex;align-items:center;gap:10px}
-  .feat h3 i{width:8px;height:8px;background:var(--ac);border-radius:2px;flex:0 0 auto}
-  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:6px;border:1px solid var(--ln);background:#fff;color:var(--tx);cursor:pointer;font:inherit;font-size:14px;font-weight:500}
-  .btn:hover{border-color:#98a2b3}
-  .btn:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #5b9cf2;outline-offset:1px}
-  .btn.pri{background:var(--nv);color:#fff;border-color:var(--nv)}
-  .btn.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
-  .btn.sm{padding:5px 10px;font-size:13px}
-  .tag{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;background:#eef1f5;color:var(--mt);white-space:nowrap}
-  .demo{background:#fff;border:1px solid var(--ln);border-radius:12px;padding:20px;box-shadow:0 2px 14px rgba(16,24,40,.06)}
-  .demo-h{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-  .demo-h b{font-size:15px}
-  .demo-h .sp{flex:1}
-  .clock{font-variant-numeric:tabular-nums;font-weight:700;background:var(--nv);color:#fff;border-radius:6px;padding:5px 10px;font-size:13.5px}
-  .chk{font-size:13px;color:var(--mt);display:inline-flex;align-items:center;gap:6px}
+/* Deck 16:9 (palco de 1600×900 escalado para a tela). Identidade do próprio painel: azul-marinho, faixa amarela, Segoe UI.
+   Visual claro único, por escolha: é a mesma aparência do sistema que as telas interativas reproduzem. */
+:root {
+  --ink: #1f2733; --navy: #1f2a5c; --navy-2: #283672; --accent: #ffc20e; --paper: #ffffff; --ground: #e9ecf2;
+  --muted: #5f6b7a; --line: #dde1e7; --soft: #f4f5f7;
+  --open: #2563c9; --open-bg: #e7effc; --conf: #a35a00; --conf-bg: #fff1d6; --done: #18794e; --done-bg: #e2f4ea;
+  --late: #b91c1c; --late-bg: #fde2e2; --cancel: #5c6575; --cancel-bg: #eceef2;
+  --f-text: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --f-mono: Consolas, "Cascadia Mono", "SFMono-Regular", Menlo, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--f-text); overflow: hidden;
+  padding-left: max(0px, env(safe-area-inset-left, 0px)); padding-right: max(0px, env(safe-area-inset-right, 0px)); }
+#viewport { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+#stage { width: 1600px; height: 900px; position: relative; flex: none; transform-origin: center center; background: var(--paper); box-shadow: 0 10px 40px rgba(20, 30, 60, .18); overflow: hidden; }
+.slide { position: absolute; inset: 0; padding: 64px 80px 70px; display: none; flex-direction: column; }
+.slide.on { display: flex; }
+.slide h2 { font-size: 46px; line-height: 1.12; margin: 6px 0 14px; letter-spacing: -.5px; color: var(--ink); text-wrap: balance; }
+.eyebrow { font-size: 15px; letter-spacing: 2px; text-transform: uppercase; color: #8a6a00; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ""; width: 6px; height: 22px; background: var(--accent); border-radius: 2px; }
+.lead { font-size: 22px; color: var(--muted); max-width: 1150px; margin: 0 0 30px; line-height: 1.45; }
+.g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 26px 28px; }
+.card h3 { margin: 0 0 8px; font-size: 22px; }
+.card p { margin: 0; color: var(--muted); font-size: 18px; line-height: 1.5; }
+.pain { border-left: 5px solid #c62828; } .pain h3 { color: #8a1c1c; }
+.num { display: inline-flex; width: 38px; height: 38px; border-radius: 50%; background: var(--ink); color: #fff; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; margin-bottom: 14px; }
+.foot { position: absolute; left: 80px; right: 80px; bottom: 26px; display: flex; justify-content: space-between; font-size: 14px; color: #98a2b3; }
 
-  /* ===== as duas janelas ===== */
-  .wins{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-  @media (max-width:980px){.wins{grid-template-columns:1fr}}
-  .win{border:1px solid #c9d0da;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;height:600px;background:#f2f4f8;min-width:0;transition:box-shadow .2s}
-  .win.ping{box-shadow:0 0 0 3px var(--ac)}
-  .wbar{background:#1f2a5c;color:#fff;display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:13px;flex-wrap:wrap}
-  .wbar .dots{display:flex;gap:5px;margin-right:4px}.wbar .dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.3)}
-  .wbar select{font:inherit;font-size:13px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:5px;padding:3px 6px;max-width:100%}
-  .wbar select option{color:#111}
-  .wbar .role{font-size:11px;font-weight:700;background:rgba(255,255,255,.16);border-radius:10px;padding:1px 8px;white-space:nowrap}
-  .wbar .sp{flex:1}
-  .bell{position:relative;background:none;border:0;color:#fff;cursor:pointer;padding:3px;display:inline-flex;border-radius:5px}
-  .bell:hover{background:rgba(255,255,255,.14)}
-  .bell svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .bell b{position:absolute;top:-3px;right:-5px;background:var(--ac);color:#111;font-size:10.5px;min-width:17px;height:17px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px}
-  .wbody{flex:1;overflow-y:auto;padding:12px;font-size:13.5px;line-height:1.45}
-  .wbody h4{margin:4px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--mt)}
-  .row{background:#fff;border:1px solid #e3e7ef;border-radius:8px;padding:9px 11px;margin-bottom:7px;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:3px 10px;width:100%;text-align:left;font:inherit;color:inherit}
-  .row:hover{border-color:#a9b6d3}
-  .row .t{font-weight:600;color:#1f2a5c;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .row .m{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--mt)}
-  .mk{font-size:11px;font-weight:700;border-radius:4px;padding:0 6px;color:#fff;background:var(--open)}
-  .mk.c{background:#d08a1a}
-  .st-aberta{background:#e7effc;color:var(--open)}.st-conf{background:#fff1d6;color:var(--conf)}.st-ok{background:#e2f4ea;color:var(--ok)}
-  .sec{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;border:1px solid;border-radius:12px;padding:0 8px;white-space:nowrap}
-  .sec i{width:7px;height:7px;border-radius:50%}
-  .due{font-weight:700;font-variant-numeric:tabular-nums}.due.l{color:var(--late)}.due.w{color:#c2410c}
-  .empty{color:var(--mt);text-align:center;padding:16px;border:1px dashed #c9d0da;border-radius:8px;background:#fff;font-size:13px}
-  .back{background:none;border:0;color:#2c4ba6;cursor:pointer;font:inherit;font-size:13px;padding:0;margin-bottom:6px}
-  .task{background:#fff;border:1px solid #e3e7ef;border-radius:8px;padding:11px 12px}
-  .task h5{margin:6px 0 8px;font-size:16px;color:#1f2a5c;line-height:1.3}
-  .ped{border-left:3px solid #283672;background:#f7f9fe;padding:7px 10px;border-radius:0 6px 6px 0;font-size:13.5px}
-  .ped small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.4px;color:#283672;text-transform:uppercase}
-  .meta{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-size:12px;color:var(--mt)}
-  .meta b{color:var(--tx);font-weight:600}
-  .seen{color:#9aa3b2;font-weight:600}.seen.on{color:#2563c9}
-  .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-  .acts .btn{padding:5px 10px;font-size:12.5px}
-  .inl{margin-top:8px;background:#f7f8fb;border:1px solid #e3e7ef;border-radius:8px;padding:8px;display:grid;gap:6px}
-  .inl select,.inl textarea,.inl input,.nf select,.nf textarea,.nf input{width:100%;font:inherit;font-size:13px;border:1px solid #cfd6e1;border-radius:5px;padding:5px 7px;background:#fff;color:var(--tx)}
-  .inl textarea,.nf textarea{min-height:52px;resize:vertical}
-  .feed{margin-top:10px}
-  .bub{display:flex;flex-direction:column;align-items:flex-start;margin-bottom:7px}
-  .bub.me{align-items:flex-end}
-  .bub div{background:#fff;border:1px solid #e3e7ef;border-radius:10px 10px 10px 3px;padding:5px 9px;max-width:88%}
-  .bub.me div{background:#e7effc;border-color:#cfdcf6;border-radius:10px 10px 3px 10px}
-  .bub small{font-size:10.5px;color:var(--mt)}
-  .ev{border:1px solid #e3e7ef;border-left:3px solid #9aa3b2;background:#fff;border-radius:6px;padding:5px 9px;margin-bottom:7px;font-size:12.5px}
-  .ev b{display:block}.ev small{color:var(--mt);font-size:10.5px}
-  .ev.fwd{border-left-color:#2563c9}.ev.fwd b{color:#2563c9}
-  .ev.conf{border-left-color:#d08a1a}.ev.conf b{color:var(--conf)}
-  .ev.ok{border-left-color:var(--ok)}.ev.ok b{color:var(--ok)}
-  .ev.back{border-left-color:#c2410c}.ev.back b{color:#c2410c}
-  .ev.late{border-left-color:var(--late)}.ev.late b{color:var(--late)}
-  .comp{display:flex;gap:6px;border-top:1px solid #dde1e7;background:#fff;padding:8px}
-  .comp input{flex:1;min-width:0;font:inherit;font-size:13px;border:1px solid #cfd6e1;border-radius:5px;padding:5px 8px}
-  .nf{display:grid;gap:7px}
-  .nf label{font-size:11.5px;font-weight:700;color:var(--mt);display:grid;gap:3px}
-  .nf .two{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-  .bellp{background:#fff;border:1px solid #e3e7ef;border-radius:8px;padding:8px 10px;margin-bottom:10px}
-  .bellp div{padding:4px 0;border-bottom:1px solid #f0f2f5;font-size:12.5px}.bellp div:last-child{border:0}
-  .bellp small{color:var(--mt)}
-  .under{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin-top:18px}
-  @media (max-width:980px){.under{grid-template-columns:1fr}}
-  .under>*{min-width:0}
-  .pnl{border:1px solid var(--ln);border-radius:8px;padding:14px 16px;background:#fff}
-  .pnl h4{margin:0 0 2px;font-size:14px}
-  .pnl .s{font-size:12.5px;color:var(--mt);margin-bottom:10px}
-  .route{display:flex;height:30px;border-radius:6px;overflow:hidden;background:#eef1f5}
-  .route span{display:flex;align-items:center;justify-content:center;color:#fff;font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;min-width:3px;border-right:2px solid #fff}
-  .route span:last-child{border-right:0}
-  .rt{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;margin-top:10px;font-size:13px;align-items:center}
-  .rt .v{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
-  .nlog{font-size:13px;display:grid;gap:6px;max-height:210px;overflow-y:auto}
-  .nlog div{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start}
-  .nlog .ch{font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 6px;white-space:nowrap;margin-top:2px}
-  .ch.app{background:#e7effc;color:var(--open)}.ch.mail{background:#fff1d6;color:var(--conf)}.ch.dig{background:#efe8fb;color:#6d3fb5}
-  .hint{font-size:13px;color:var(--mt);margin-top:12px;background:#fffbea;border-left:4px solid var(--ac);padding:10px 14px;border-radius:0 8px 8px 0}
+/* capa */
+.cover { background: var(--ink); color: #fff; border-bottom: 10px solid var(--accent); justify-content: center; }
+.cover .eyebrow { color: var(--accent); }
+.cover h1 { font-size: 72px; line-height: 1.05; margin: 22px 0 24px; letter-spacing: -1.5px; max-width: 1250px; text-wrap: balance; }
+.cover p { font-size: 26px; color: #c9d0da; max-width: 1080px; margin: 0; line-height: 1.45; }
+.facts { display: flex; gap: 64px; margin-top: 64px; }
+.facts b { display: block; font-size: 44px; color: #fff; }
+.facts span { font-size: 18px; color: #9aa4b2; }
 
-  /* resumo diário (maquete) */
-  .mail{border:1px solid var(--ln);border-radius:10px;overflow:hidden;background:#fff;font-size:14px}
-  .mail .mh{background:#f4f6f8;padding:10px 14px;font-size:13px;color:var(--mt);border-bottom:1px solid var(--ln)}
-  .mail .mh b{color:var(--tx)}
-  .mail .mb{padding:14px 16px}
-  .mail .grp{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin:12px 0 4px}
-  .mail ul{margin:0;padding-left:18px}
-  .mail li{margin:2px 0}
-  /* perfis e cadastro em massa */
-  table.lim{border-collapse:collapse;width:100%;font-size:14.5px;background:#fff;border:1px solid var(--ln);border-radius:10px;overflow:hidden}
-  table.lim th{background:#f4f6f8;text-align:left;padding:10px 14px;font-size:13px;color:#475467}
-  table.lim td{padding:11px 14px;border-top:1px solid var(--ln);vertical-align:top}
-  .tw{overflow-x:auto}
-  table.imp{border-collapse:collapse;width:100%;min-width:640px;font-size:13.5px;background:#fff}
-  table.imp th{background:#f4f6f8;text-align:left;padding:7px 9px;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;color:#475467;border-bottom:1px solid #c7ced8}
-  table.imp td{padding:7px 9px;border-bottom:1px solid #edf0f3}
-  table.imp tr.bad td{background:#fdf1f0}
-  .okc{color:var(--ok);font-weight:600}.badc{color:var(--late);font-weight:600}
-  /* segurança */
-  .secg{display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:start}
-  .secg .ic{width:44px;height:44px;border-radius:10px;background:var(--nv);display:flex;align-items:center;justify-content:center}
-  .secg .ic svg{width:22px;height:22px;stroke:var(--ac);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .diag{display:flex;align-items:stretch;flex-wrap:wrap;margin:10px 0 34px}
-  .diag div{flex:1;min-width:170px;background:#fff;border:1px solid var(--ln);padding:14px 16px;font-size:14px}
-  .diag div:first-child{border-radius:10px 0 0 10px}.diag div:last-child{border-radius:0 10px 10px 0}
-  @media (max-width:900px){.diag div,.diag div:first-child,.diag div:last-child{border-radius:0}}
-  .diag div b{display:block;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--mt);margin-bottom:4px}
-  .diag div.lock{background:var(--nv);color:#fff;border-color:var(--nv)}.diag div.lock b{color:var(--ac)}
-  .note{border-left:4px solid var(--ac);background:#fffbea;padding:14px 18px;border-radius:0 8px 8px 0;font-size:15px;color:#4a3d00}
-  footer{background:var(--nv);color:#c3cad5;padding-block:40px;font-size:14px}
-  footer b{color:#fff}
-  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.win{transition:none}}
+/* navegação */
+#nav { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); display: flex; gap: 8px; align-items: center; z-index: 5; }
+#nav button { font: 600 15px var(--f-text); border: 1px solid #c9d0da; background: #fff; color: var(--ink); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+#nav button:hover { border-color: var(--navy); }
+#nav button:focus-visible { outline: 2px solid #5b9cf2; outline-offset: 2px; }
+#count { font: 600 14px var(--f-mono); color: var(--muted); background: #fff; border-radius: 8px; padding: 8px 10px; border: 1px solid #c9d0da; }
+#bar { position: absolute; left: 0; bottom: 0; height: 5px; background: var(--accent); transition: width .25s; z-index: 3; }
+
+/* fluxograma */
+.flow { width: 100%; height: auto; }
+.flow .n rect, .flow .n polygon { stroke-width: 2; }
+.flow .t { font: 600 19px var(--f-text); fill: var(--ink); }
+.flow .s { font: 15px var(--f-text); fill: var(--muted); }
+.flow .lbl { font: 600 15px var(--f-text); fill: var(--ink); }
+.flow .lbl2 { font: 14px var(--f-text); fill: var(--muted); }
+.flow .ar { fill: none; stroke: #6b7383; stroke-width: 2.2; }
+.flow .mail rect { fill: #fff8db; stroke: #e6c35c; stroke-width: 1.5; }
+.flow .mail text { font: 600 13px var(--f-text); fill: #7a5a00; }
+
+/* tabelas do deck */
+table.deck { border-collapse: collapse; width: 100%; font-size: 18px; background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+table.deck th { text-align: left; background: var(--soft); color: #475467; font-size: 14px; letter-spacing: .4px; text-transform: uppercase; padding: 12px 16px; }
+table.deck td { padding: 12px 16px; border-top: 1px solid var(--line); vertical-align: top; }
+.chip { display: inline-block; font-size: 14px; font-weight: 700; border-radius: 6px; padding: 2px 9px; white-space: nowrap; }
+.c-now { background: var(--open-bg); color: var(--open); } .c-dig { background: #efe8fb; color: #6d3fb5; } .c-app { background: var(--soft); color: var(--muted); } .c-late { background: var(--late-bg); color: var(--late); }
+.subj { font: 15.5px var(--f-mono); background: #f1f3f7; border-radius: 6px; padding: 8px 12px; color: var(--ink); }
+.subj b { color: #7a5a00; }
+.mailbox { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; display: flex; flex-direction: column; min-height: 0; }
+.mailbox .mh { background: var(--soft); padding: 10px 16px; font-size: 14px; color: var(--muted); border-bottom: 1px solid var(--line); }
+.mailbox .mh b { color: var(--ink); display: block; font-size: 15px; }
+.mailbox .mb { overflow-y: auto; flex: 1; }
+.mailbox .mb > table { width: 100% !important; }
+.pipe { display: flex; align-items: stretch; margin: 6px 0 30px; }
+.pipe > div { flex: 1; background: #fff; border: 1px solid var(--line); padding: 18px 20px; font-size: 17px; line-height: 1.4; position: relative; }
+.pipe > div:first-child { border-radius: 12px 0 0 12px; } .pipe > div:last-child { border-radius: 0 12px 12px 0; }
+.pipe > div b { display: block; font-size: 13px; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.pipe > div.dark { background: var(--ink); color: #fff; border-color: var(--ink); } .pipe > div.dark b { color: var(--accent); }
+.note { border-left: 5px solid var(--accent); background: #fffbea; padding: 16px 20px; border-radius: 0 10px 10px 0; font-size: 18px; color: #4a3d00; line-height: 1.45; }
+.feat h3 { display: flex; gap: 10px; align-items: center; font-size: 20px; }
+.feat h3::before { content: ""; width: 9px; height: 9px; background: var(--accent); border-radius: 2px; flex: none; }
+.feat p { font-size: 16.5px; }
+
+/* ===================== demonstração: reprodução das telas do painel ===================== */
+.demo-top { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.demo-top h2 { margin: 0; font-size: 34px; }
+.demo-top .sp { flex: 1; }
+.clock { font: 700 15px var(--f-mono); background: var(--ink); color: #fff; border-radius: 6px; padding: 6px 12px; }
+.dbtn { font: 600 15px var(--f-text); border: 1px solid #c9d0da; background: #fff; color: var(--ink); border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+.dbtn:hover { border-color: var(--navy); }
+.chk { font-size: 15px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+.wins { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.win { height: 650px; border: 1px solid #b8c1cf; border-radius: 10px; overflow: clip; background: #f2f4f8; position: relative; transition: box-shadow .2s; }
+.win.ping { box-shadow: 0 0 0 4px var(--accent); }
+.chrome { height: 34px; background: #dfe3ea; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-bottom: 1px solid #c9d0da; }
+.chrome i { width: 10px; height: 10px; border-radius: 50%; background: #b8c1cf; flex: none; }
+.chrome .url { flex: 1; min-width: 0; background: #fff; border-radius: 5px; font: 12.5px var(--f-mono); color: #4b5565; padding: 3px 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chrome select { font: 600 12.5px var(--f-text); border: 1px solid #b8c1cf; border-radius: 5px; padding: 2px 4px; background: #fff; color: var(--ink); max-width: 220px; }
+.appwrap { width: 1080px; height: var(--ah, 943px); transform: scale(var(--sc, .6525)); transform-origin: 0 0; position: absolute; left: 0; top: 34px; overflow: clip; }
+.ticker { margin-top: 14px; display: grid; grid-template-columns: 210px 1fr; gap: 16px; align-items: start; font-size: 15.5px; }
+.ticker > b { font-size: 14px; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); padding-top: 3px; }
+.ticker .rows { display: grid; gap: 5px; min-height: 76px; }
+.ticker .rows div { display: flex; gap: 10px; align-items: baseline; }
+.ticker .rows small { color: #98a2b3; font-family: var(--f-mono); font-size: 13px; }
+
+/* o "app" (mesmos valores do css/app.css do painel) */
+.app { --a-navy: #1f2a5c; --a-navy2: #283672; --a-border: #dde1e8; --a-soft: #eceef2; --a-muted: #6b7383; --a-text: #1c2230; --a-action: #2c4ba6;
+  width: 100%; height: 100%; display: flex; flex-direction: column; font: 15px/1.45 var(--f-text); color: var(--a-text); background: #f2f4f8; position: relative; }
+.app * { box-sizing: border-box; }
+.app button { font: inherit; color: inherit; }
+.a-top { height: 52px; background: var(--a-navy); color: #fff; display: flex; align-items: center; gap: 12px; padding: 0 14px; flex: none; }
+.a-top .org { font-weight: 700; font-size: 17px; }
+.a-top .sep { width: 1px; height: 20px; background: rgba(255,255,255,.3); }
+.a-top .sys { font-weight: 600; font-size: 15px; }
+.a-top .grow { flex: 1; }
+.a-top .pill { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 12px; background: rgba(255,255,255,.14); }
+.a-top .av { width: 30px; height: 30px; border-radius: 50%; background: #fff; color: var(--a-navy); display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; }
+.a-top .uname { color: #dfe5f5; }
+.a-top svg { width: 19px; height: 19px; stroke: #dfe5f5; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.a-body { flex: 1; display: flex; min-height: 0; }
+.a-side { width: 58px; flex: none; background: #fff; border-right: 1px solid var(--a-border); padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; }
+.a-nav { display: flex; align-items: center; justify-content: center; padding: 8px 6px; border-radius: 6px; cursor: pointer; position: relative; border: 0; background: none; }
+.a-nav:hover { background: #eef1f6; }
+.a-nav.on { background: #eef2fb; box-shadow: inset 3px 0 0 var(--a-navy); }
+.a-nav .ic { width: 30px; height: 30px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; }
+.a-nav .ic svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.a-nav.on .ic { box-shadow: 0 0 0 2px currentColor inset; }
+.t-home { background: #e7effc; color: #2563c9; } .t-track { background: #e6f5f3; color: #0f766e; } .t-new { background: #e2f4ea; color: #18794e; } .t-mgmt { background: #f1e9fb; color: #6d3fb5; }
+.a-nav .cnt { position: absolute; top: 2px; right: 2px; font-size: 10px; background: var(--a-action); color: #fff; border-radius: 10px; padding: 0 5px; line-height: 15px; font-weight: 600; }
+.a-main { flex: 1; min-width: 0; padding: 16px 20px 20px; overflow-y: auto; }
+.a-main::-webkit-scrollbar { width: 8px; } .a-main::-webkit-scrollbar-thumb { background: #c9d0da; border-radius: 4px; }
+.a-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.a-head h1 { font-size: 22px; color: var(--a-navy); margin: 0; font-weight: 600; flex: 1; }
+.abtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--a-border); background: #fff; cursor: pointer; white-space: nowrap; min-height: 36px; font-weight: 500; }
+.abtn:hover { background: #f8f9fb; }
+.abtn.pri { background: var(--a-navy2); border-color: var(--a-navy2); color: #fff; }
+.abtn.ok { background: #18794e; border-color: #18794e; color: #fff; }
+.abtn.out { border-color: var(--a-navy2); color: var(--a-navy2); }
+.abtn.ghost { border-color: transparent; background: none; color: var(--a-action); }
+.abtn.lg { min-height: 40px; padding: 7px 18px; }
+.abtn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.apanel { background: #fff; border: 1px solid #e1e5ee; border-radius: 8px; box-shadow: 0 1px 2px rgba(20,30,60,.04); }
+.tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 12px; font-size: 12.5px; font-weight: 600; white-space: nowrap; line-height: 1.5; }
+.st-aberta { background: var(--open-bg); color: var(--open); } .st-conf { background: var(--conf-bg); color: var(--conf); } .st-ok { background: var(--done-bg); color: var(--done); } .st-cancel { background: var(--cancel-bg); color: var(--cancel); }
+.pr-normal { background: #f1f3f7; color: #5c6575; font-weight: 500; } .pr-alta { background: #fdecd8; color: #b45309; } .pr-urgente { background: #b91c1c; color: #fff; }
+.cc-ok { background: var(--done-bg); color: var(--done); } .cc-late { background: var(--late-bg); color: var(--late); }
+.dl { display: inline-block; padding: 2px 9px; border-radius: 4px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.dl-neutral { background: #eef0f4; color: #3e4657; font-weight: 500; } .dl-yellow { background: #fff3c4; color: #7a5a00; } .dl-orange { background: #ffe2c7; color: #9a4400; } .dl-red { background: #fbdcdc; color: #b3261e; }
+.due { font-weight: 600; white-space: nowrap; display: inline-flex; flex-direction: column; } .due small { font-size: 11.5px; } .due-red { color: var(--late); } .due-orange { color: #c2410c; }
+.sec { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; white-space: nowrap; padding: 1px 8px 1px 6px; border: 1px solid; border-radius: 12px; }
+.sec i { width: 9px; height: 9px; border-radius: 50%; }
+.person { display: inline-flex; align-items: center; gap: 7px; }
+.avatar { width: 26px; height: 26px; border-radius: 50%; background: #4a5a8f; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 11px; position: relative; flex: none; }
+.avatar.on::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%; background: #22a35a; border: 2px solid #fff; }
+.seen { color: #9aa3b2; font-weight: 600; font-size: 13px; } .seen.on { color: #2563c9; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.stat { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; align-items: center; text-align: left; padding: 14px 16px; border-radius: 10px; border: 1px solid #e1e5ee; background: #fff; border-top: 4px solid; cursor: pointer; }
+.stat .ic { grid-row: span 2; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; }
+.stat .n { font-size: 28px; font-weight: 700; line-height: 1.1; } .stat .l { font-size: 13.5px; color: var(--a-muted); font-weight: 600; }
+.s-open { border-top-color: #2563c9; } .s-open .ic { background: var(--open-bg); color: #2563c9; } .s-open .n { color: #2563c9; }
+.s-late { border-top-color: var(--late); } .s-late .ic { background: var(--late-bg); color: var(--late); } .s-late .n { color: var(--late); }
+.s-conf { border-top-color: #d08a1a; } .s-conf .ic { background: var(--conf-bg); color: var(--conf); } .s-conf .n { color: var(--conf); }
+.s-done { border-top-color: var(--done); } .s-done .ic { background: var(--done-bg); color: var(--done); } .s-done .n { color: var(--done); }
+.sh { display: flex; align-items: center; gap: 10px; margin: 20px 0 10px; } .sh h2 { font-size: 17px; color: var(--a-navy); margin: 0; font-weight: 600; }
+.cpill { min-width: 22px; padding: 0 7px; border-radius: 11px; background: var(--open-bg); color: #2563c9; font-size: 12.5px; font-weight: 700; text-align: center; line-height: 21px; }
+.cpill.w { background: var(--conf-bg); color: var(--conf); }
+.dt { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.dt th { text-align: left; font-size: 12px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; color: #6b7383; background: #f7f8fb; padding: 9px 10px; border-bottom: 1px solid var(--a-border); white-space: nowrap; }
+.dt td { padding: 9px 8px; border-bottom: 1px solid #edf0f5; vertical-align: middle; }
+.dt th { padding-left: 8px; padding-right: 8px; }
+.dt .person { white-space: nowrap; }
+.dt tr:last-child td { border-bottom: 0; }
+.dt tbody tr { cursor: pointer; } .dt tbody tr:hover td { background: #f6f8fd; }
+.dt .t { font-weight: 600; color: var(--a-navy); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.dt .pv { font-size: 12.5px; color: var(--a-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px; }
+.mk { background: var(--a-action); color: #fff; border-radius: 4px; padding: 0 6px; font-size: 12px; font-weight: 600; }
+.mkm { color: var(--a-action); font-weight: 600; font-size: 13px; }
+.empty { padding: 24px; text-align: center; color: var(--a-muted); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.qf { border: 1px solid var(--a-border); background: #fff; border-radius: 16px; padding: 4px 12px; cursor: pointer; font-size: 14px; }
+.qf.on { background: var(--a-navy); border-color: var(--a-navy); color: #fff; }
+.qf .n { font-weight: 600; margin-left: 4px; }
+.back { display: inline-flex; gap: 4px; color: var(--a-action); font-size: 14px; margin-bottom: 6px; background: none; border: 0; cursor: pointer; padding: 0; }
+.taskview { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.task-card { padding: 18px 20px; }
+.task-head { display: flex; gap: 10px 14px; align-items: flex-start; flex-wrap: wrap; }
+.task-head .m { flex: 1 1 320px; min-width: 0; }
+.code { font: 12px var(--f-mono); color: var(--a-muted); }
+.task-title { font-size: 22px; color: var(--a-navy); margin: 8px 0 0; line-height: 1.3; font-weight: 600; }
+.task-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.pedido { margin-top: 14px; border-left: 4px solid var(--a-navy2); background: #f7f9fe; border-radius: 0 8px 8px 0; padding: 12px 16px 14px; }
+.pedido .pl { font-size: 11.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--a-navy2); margin-bottom: 6px; }
+.pedido .pb { font-size: 15.5px; line-height: 1.55; color: #141a2a; }
+.notice { margin-top: 12px; padding: 10px 12px; border-radius: 6px; background: #fff3c4; color: #7a5a00; font-size: 14px; }
+.resolution { margin-top: 12px; padding: 10px 14px; border-radius: 8px; background: var(--done-bg); border-left: 3px solid var(--done); font-size: 14.5px; }
+.metastrip { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--a-soft); font-size: 13px; }
+.metastrip .mi { display: inline-flex; align-items: center; gap: 6px; }
+.metastrip .k { color: var(--a-muted); font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
+.metastrip .avatar { width: 22px; height: 22px; font-size: 10px; }
+.metastrip .dl { font-size: 12px; padding: 1px 7px; }
+.chatcol { display: flex; flex-direction: column; height: calc(var(--ah, 943px) - 52px - 70px); overflow: hidden; }
+.chat-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--a-border); }
+.chat-head h2 { font-size: 17px; color: var(--a-navy); margin: 0; flex: 1; font-weight: 600; }
+.chat-head .avatar { width: 28px; height: 28px; border: 2px solid #fff; margin-left: -6px; }
+.chat-msgs { flex: 1; overflow-y: auto; padding: 12px 14px; background: #f7f8fb; }
+.sysmsg { text-align: center; font-size: 12px; color: var(--a-muted); margin: 2px 0 12px; }
+.bubble { display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-end; }
+.bubble .avatar { width: 28px; height: 28px; }
+.bubble .bb { background: #fff; border: 1px solid #e3e7ef; border-radius: 12px 12px 12px 4px; padding: 8px 11px; max-width: 86%; font-size: 14px; }
+.bubble.mine { justify-content: flex-end; } .bubble.mine .bb { background: #e7effc; border-color: #cfdcf6; border-radius: 12px 12px 4px 12px; }
+.bubble .who { font-size: 12.5px; font-weight: 700; color: var(--a-navy); } .bubble .when { font-weight: 400; color: var(--a-muted); margin-left: 6px; font-size: 11.5px; }
+.evmsg { margin: 4px 0 12px; padding: 8px 12px; border-radius: 8px; background: #fff; border: 1px solid #e3e7ef; border-left: 4px solid #9aa3b2; font-size: 13.5px; }
+.evmsg .when { font-size: 11.5px; color: var(--a-muted); } .evmsg .et { font-weight: 700; } .evmsg .ex { margin-top: 4px; } .evmsg .ex span { color: var(--a-muted); font-weight: 600; }
+.ev-fwd { border-left-color: #2563c9; } .ev-fwd .et { color: #2563c9; } .ev-conf { border-left-color: #d08a1a; } .ev-conf .et { color: var(--conf); }
+.ev-ok { border-left-color: var(--done); } .ev-ok .et { color: var(--done); } .ev-back { border-left-color: #c2410c; } .ev-back .et { color: #c2410c; }
+.ev-due { border-left-color: #6d3fb5; } .ev-due .et { color: #6d3fb5; } .ev-cancel .et { color: #4b5565; } .ev-late { border-left-color: var(--late); } .ev-late .et { color: var(--late); }
+.compose { border-top: 1px solid var(--a-border); padding: 10px; background: #fff; }
+.editor { border: 1px solid var(--a-border); border-radius: 6px; }
+.editor textarea { width: 100%; border: 0; resize: none; min-height: 48px; padding: 8px 10px; font: inherit; font-size: 14px; outline: none; }
+.editor .tools { display: flex; gap: 2px; padding: 4px 6px; border-top: 1px solid var(--a-soft); font-size: 13px; color: var(--a-text); white-space: nowrap; overflow: hidden; }
+.editor .tools span { padding: 3px 8px; border-radius: 4px; }
+.compose .foot { display: flex; justify-content: flex-end; margin-top: 8px; }
+.fgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 18px; }
+.fgrid .s2 { grid-column: span 2; } .fgrid .s3 { grid-column: span 3; } .fgrid .s4 { grid-column: 1 / -1; }
+.f > span { display: block; font-size: 13px; color: var(--a-muted); margin-bottom: 4px; } .f .req { color: #b3261e; }
+.app input, .app select, .app textarea.in { width: 100%; padding: 6px 10px; border: 1px solid var(--a-border); border-radius: 6px; background: #fff; min-height: 36px; font: inherit; color: var(--a-text); }
+.hint { font-size: 13px; color: var(--a-muted); margin-top: 4px; }
+.origin { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; background: #f3f5f9; border: 1px dashed #c8cfdb; color: #4b5565; font-size: 14px; }
+.form-foot { display: flex; align-items: center; gap: 12px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--a-soft); }
+.mback { position: absolute; inset: 0; background: rgba(20,28,45,.38); display: flex; align-items: flex-start; justify-content: center; padding-top: 90px; z-index: 20; }
+.modal { background: #fff; border-radius: 8px; width: 560px; border: 1px solid var(--a-border); }
+.modal .mh { padding: 12px 16px; border-bottom: 1px solid var(--a-border); font-size: 17px; font-weight: 600; }
+.modal .mb { padding: 14px 16px; display: grid; gap: 12px; }
+.modal .mf { padding: 10px 16px; border-top: 1px solid var(--a-border); display: flex; justify-content: flex-end; gap: 8px; }
+.menu { position: absolute; right: 0; top: calc(100% + 4px); background: #fff; border: 1px solid var(--a-border); border-radius: 6px; box-shadow: 0 6px 18px rgba(20,30,60,.10); min-width: 220px; z-index: 10; padding: 4px; }
+.menu button { display: block; width: 100%; text-align: left; padding: 8px 12px; border: 0; background: none; border-radius: 4px; cursor: pointer; }
+.menu button:hover { background: #e9eefa; } .menu .danger { color: #b3261e; }
+.toast { position: absolute; right: 16px; bottom: 16px; background: #1d6b3a; color: #fff; padding: 10px 14px; border-radius: 6px; font-size: 14px; z-index: 30; }
+@media (prefers-reduced-motion: reduce) { #bar, .win { transition: none; } }
+/* ===================== v2: slides novos ===================== */
+.mk-hl, .hl { box-shadow: 0 0 0 3px var(--accent), 0 0 0 9px rgba(255,194,14,.35) !important; position: relative; animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 3px var(--accent), 0 0 0 14px rgba(255,194,14,.12); } }
+.hlrow td { background: #fffbea !important; } .hlrow td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
+/* 2 problema + solução */
+.ps { display: grid; grid-template-columns: 1fr 56px 1.55fr; gap: 18px; align-items: stretch; margin-top: 34px; }
+.ps-h { font-size: 15px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 14px; }
+.ps-now { background: #fdf3f3; border-radius: 14px; padding: 26px 28px; display: flex; flex-direction: column; gap: 16px; }
+.ps-now .ps-h { color: #8a1c1c; }
+.pain-row { border-left: 4px solid #c62828; padding: 4px 0 4px 16px; }
+.pain-row b { display: block; font-size: 21px; color: #8a1c1c; margin-bottom: 4px; } .pain-row span { font-size: 17px; color: var(--muted); line-height: 1.45; }
+.ps-arrow { display: flex; align-items: center; justify-content: center; font-size: 44px; color: #8a6a00; }
+.ps-steps { display: flex; flex-direction: column; }
+.steps4 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; }
+.st4 { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 24px 26px; min-height: 215px; display: flex; flex-direction: column; }
+.st4 .num { margin-bottom: 12px; } .st4 b { font-size: 24px; margin-bottom: 6px; } .st4 span:last-child { font-size: 18px; color: var(--muted); line-height: 1.45; }
+/* 3 fluxograma clicável */
+.flowhead { display: flex; align-items: baseline; gap: 22px; flex-wrap: wrap; }
+.tapme { font-size: 16px; font-weight: 600; color: #7a5a00; background: #fff8db; border: 1px solid #e6c35c; border-radius: 20px; padding: 4px 14px; }
+.flow .hot { cursor: pointer; } .flow .hot rect { transition: filter .15s; }
+.flow .hot:hover rect, .flow .hot:focus-visible rect, .flow .hot.sel rect { filter: drop-shadow(0 0 6px rgba(255,194,14,.9)); stroke-width: 3.5; }
+.flow .hot:focus { outline: none; }
+.flow .plus circle { fill: var(--accent); stroke: #fff; stroke-width: 2; } .flow .plus text { font: 700 20px var(--f-text); fill: var(--ink); }
+.remark { position: absolute; right: 60px; top: 190px; width: 640px; max-height: 670px; overflow-y: auto; background: #fff; border: 1px solid #c9d0da; border-top: 6px solid var(--rc, var(--open)); border-radius: 12px; box-shadow: 0 18px 50px rgba(20,30,60,.25); padding: 22px 26px 20px; z-index: 4; }
+.remark[hidden] { display: none; }
+.remark .rx { position: absolute; right: 12px; top: 10px; border: 0; background: none; font-size: 20px; cursor: pointer; color: var(--muted); padding: 4px 8px; }
+.remark h3 { margin: 0 0 4px; font-size: 26px; color: var(--rc, var(--open)); } .remark .rsub { color: var(--muted); font-size: 16px; margin-bottom: 14px; }
+.ract { display: grid; grid-template-columns: 34px 1fr; gap: 1px 12px; padding: 8px 0; border-top: 1px solid var(--line); }
+.ract .ri { grid-row: span 2; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; background: var(--soft); }
+.ract b { font-size: 17.5px; } .ract b small { font-weight: 600; font-size: 13px; color: #6d3fb5; background: #f1e9fb; border-radius: 10px; padding: 1px 8px; margin-left: 8px; white-space: nowrap; }
+.ract span { font-size: 15.5px; color: var(--muted); line-height: 1.4; }
+.rgo { margin-top: 12px; width: 100%; font: 700 16px var(--f-text); background: var(--ink); color: #fff; border: 0; border-radius: 8px; padding: 12px; cursor: pointer; }
+.rgo:hover { background: var(--navy-2); }
+/* 4 exemplo */
+.walk { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr; gap: 18px 22px; flex: 1; min-height: 0; }
+.wk { display: flex; flex-direction: column; min-height: 0; }
+.wk-h { display: flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 700; margin-bottom: 8px; }
+.wk-h .num { width: 30px; height: 30px; font-size: 15px; margin: 0; background: var(--accent); color: var(--ink); }
+.shot { flex: 1; min-height: 0; border: 1px solid #b8c1cf; border-radius: 10px; background: #f2f4f8; overflow: hidden; position: relative; }
+.shot > .app { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.app.mini { height: auto; }
+.app.mini .a-main { overflow: visible; }
+.wk p { margin: 8px 0 0; font-size: 15.5px; line-height: 1.4; color: var(--muted); }
+.mailchip { margin-top: 10px; font: 12.5px var(--f-mono); background: #fff8db; border: 1px solid #e6c35c; color: #7a5a00; border-radius: 6px; padding: 6px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.route { display: flex; height: 30px; border-radius: 6px; overflow: hidden; gap: 2px; }
+.route span { color: #fff; font-size: 12.5px; font-weight: 700; display: flex; align-items: center; padding: 0 8px; white-space: nowrap; overflow: hidden; }
+/* 6 avisos */
+.av-grid { display: grid; grid-template-columns: 1.05fr 1fr 1fr; gap: 20px; flex: 1; min-height: 0; }
+.rules { display: flex; flex-direction: column; gap: 9px; min-height: 0; }
+.rule { display: grid; grid-template-columns: 112px 1fr; gap: 10px; align-items: start; background: #fff; border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; }
+.rule .chip { text-align: center; } .rule b { display: block; font-size: 16px; } .rule div span { font-size: 14.5px; color: var(--muted); }
+/* 7 tempo por setor */
+.tps { display: grid; grid-template-columns: 640px 1fr; gap: 40px; flex: 1; min-height: 0; margin-top: 6px; }
+.drawer-mock { align-self: start; border: 1px solid #b8c1cf; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 12px 34px rgba(20,30,60,.14); display: flex; flex-direction: column; min-height: 0; font-size: 14px; color: #1c2230; }
+.drawer-mock .dh { background: #1f2a5c; color: #fff; padding: 12px 18px; font-weight: 600; font-size: 17px; display: flex; justify-content: space-between; }
+.drawer-mock .db { padding: 14px 18px; overflow: hidden; display: flex; flex-direction: column; gap: 10px; }
+.hintline { font-size: 13px; color: #6b7383; background: #f7f8fb; border-radius: 6px; padding: 7px 10px; }
+.timeline { border-left: 3px solid #dde1e8; margin-left: 8px; padding-left: 18px; display: grid; gap: 10px; }
+.tl-item { position: relative; } .tl-item::before { content: ""; position: absolute; left: -26px; top: 5px; width: 13px; height: 13px; border-radius: 50%; background: #fff; border: 3px solid #9aa3b2; }
+.tl-item.current::before { border-color: #2563c9; background: #2563c9; }
+.tl-item .head { display: flex; justify-content: space-between; align-items: center; } .tl-item .head b { font-size: 16px; }
+.tl-item .sub { font-size: 12.5px; color: #6b7383; margin-top: 2px; }
+.tl-person { font-size: 13px; margin-top: 3px; padding-left: 10px; border-left: 2px solid #eceef2; } .muted { color: #6b7383; }
+.late-flag { display: inline-block; margin-top: 4px; font-size: 12px; font-weight: 700; color: #b91c1c; background: #fde2e2; border-radius: 4px; padding: 1px 8px; }
+.acc { border-top: 1px solid #eceef2; padding-top: 10px; display: grid; gap: 7px; } .acc > b { font-size: 14px; }
+.accrow { display: grid; grid-template-columns: 130px 1fr 60px 90px; gap: 10px; align-items: center; } .accrow small { color: #6b7383; }
+.accbar { height: 10px; background: #eceef2; border-radius: 5px; overflow: hidden; } .accbar i { display: block; height: 100%; border-radius: 5px; }
+.tps-txt { display: flex; flex-direction: column; gap: 16px; }
+.big-route { display: flex; height: 54px; border-radius: 10px; overflow: hidden; gap: 3px; margin-bottom: 8px; }
+.big-route span { color: #fff; font-size: 17px; font-weight: 700; display: flex; align-items: center; padding: 0 14px; white-space: nowrap; overflow: hidden; }
+.tp { border-left: 4px solid var(--accent); padding: 2px 0 2px 16px; } .tp b { display: block; font-size: 21px; margin-bottom: 3px; } .tp span { font-size: 17px; color: var(--muted); line-height: 1.45; }
+/* 8 indicadores */
+.bi { display: grid; grid-template-columns: 1.12fr 1fr; gap: 24px; align-items: start; }
+.bi-panel { border: 1px solid #b8c1cf; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; min-height: 0; background: #f2f4f8; }
+.bi-cap { background: #dfe3ea; padding: 8px 14px; font-size: 14px; font-weight: 600; color: #3e4657; display: flex; justify-content: space-between; border-bottom: 1px solid #c9d0da; }
+.bi-cap span { font-weight: 600; color: #8a6a00; background: #fff8db; border-radius: 10px; padding: 0 8px; font-size: 12.5px; }
+.fbar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: #fff; border: 1px solid #e1e5ee; border-radius: 8px; padding: 8px 12px; }
+.fbar .f > span { font-size: 12px; margin-bottom: 2px; } .fbar select { min-height: 30px !important; padding: 3px 8px !important; font-size: 13.5px; }
+.kcap { font-size: 12px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: #6b7383; margin: 12px 0 6px; }
+.kpis4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.kpi2 { background: #fff; border: 1px solid #e1e5ee; border-radius: 8px; padding: 9px 12px; }
+.kpi2 .k { font-size: 12.5px; color: #6b7383; font-weight: 600; } .kpi2 .v { font-size: 26px; font-weight: 700; color: #1f2a5c; line-height: 1.2; } .kpi2 .d { font-size: 11.5px; color: #6b7383; }
+.red { color: #b91c1c !important; } .orange { color: #c2410c !important; } .green { color: #18794e !important; }
+.hbars { display: grid; gap: 6px; }
+.hb { display: grid; grid-template-columns: 150px 1fr 56px; gap: 10px; align-items: center; font-size: 13.5px; }
+.hb .lab { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .hb .val { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hb .bar { height: 16px; background: #eef0f4; border-radius: 4px; overflow: hidden; } .hb .bar i { display: block; height: 100%; border-radius: 4px; }
+.an { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; color: #1c2230; }
+.an-k { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.an-k > div { background: #fff; border: 1px solid #e1e5ee; border-radius: 8px; padding: 9px 12px; } .an-k b { display: block; font-size: 26px; color: #1f2a5c; } .an-k span { font-size: 12.5px; color: #6b7383; font-weight: 600; }
+.an-card { background: #fff; border: 1px solid #e1e5ee; border-radius: 8px; padding: 12px 14px; } .an-t { font-weight: 700; font-size: 15px; } .an-s { font-size: 12.5px; color: #6b7383; margin-bottom: 8px; }
+/* 9 funcionalidades */
+.ff { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: 1fr 1fr; gap: 18px 20px; flex: 1; min-height: 0; }
+.fcard { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 12px 14px; display: flex; flex-direction: column; min-height: 0; }
+.fcard .fv { height: 228px; border-radius: 8px; overflow: hidden; border: 1px solid #e1e5ee; margin-bottom: 10px; flex: none; }
+.fcard .fv .app { height: 100%; }
+.fcard > b { font-size: 18px; margin: 0 2px 3px; } .fcard > span { font-size: 14.5px; color: var(--muted); line-height: 1.4; margin: 0 2px; }
+.fakeimg { display: flex; align-items: flex-end; gap: 4px; height: 44px; background: #eef2fb; border-radius: 6px; padding: 6px; margin: 6px 0; }
+.fakeimg i { flex: 1; background: #2c4ba6; border-radius: 2px; }
+table.mini-t { border-collapse: collapse; font-size: 12px; margin-top: 4px; } .mini-t th, .mini-t td { border: 1px solid #dde1e8; padding: 2px 7px; text-align: left; } .mini-t th { background: #f7f8fb; }
+table.mini-t.wide { width: 100%; font-size: 12.5px; } .mini-t.wide td, .mini-t.wide th { padding: 5px 8px; }
+.mini-t.xl td { vertical-align: top; } .okc { color: #18794e; font-weight: 700; } .badc { color: #b91c1c; font-weight: 700; } .mini-t tr.bad td { background: #fdf1f1; }
+/* 10 próximos passos */
+.next { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 34px; }
+.next > div { background: var(--soft); border-radius: 12px; padding: 18px 18px 20px; font-size: 18px; font-weight: 600; line-height: 1.35; }
+.next .num { width: 32px; height: 32px; font-size: 15px; margin-bottom: 10px; background: var(--accent); color: var(--ink); display: flex; }
+@media (prefers-reduced-motion: reduce) { .hl, .mk-hl { animation: none; } }
 </style>
+</head>
+<body>
 
-<nav class="top"><div class="wrap"><b><i></i>Painel de Demands</b>
-  <div class="lk"><a href="#problema">Problema</a><a href="#como">Como funciona</a><a href="#funcoes">Funcionalidades</a><a href="#demo">Demonstração</a><a href="#avisos">Avisos</a><a href="#perfis">Perfis</a><a href="#seguranca">Segurança</a><a href="#implantacao">Implantação</a></div>
-</div></nav>
+<div id="viewport"><div id="stage">
 
-<header class="hero"><div class="wrap">
+<!-- 1 capa -->
+<section class="slide cover" data-title="Capa">
   <div class="eyebrow">Demandas entre setores · EQTL PI Sul</div>
   <h1>Toda demanda com dono, prazo e histórico, até quem pediu confirmar.</h1>
-  <p>Um painel web para pedir, encaminhar e acompanhar demandas entre os setores, com conversa em cada demanda, tempo medido em cada setor e aviso para quem precisa agir.</p>
+  <p>Um painel web para pedir, encaminhar e acompanhar demandas entre setores, com conversa em cada demanda, tempo medido em cada setor e aviso para quem precisa agir.</p>
   <div class="facts">
     <div><b>7</b><span>setores no primeiro ciclo</span></div>
-    <div><b>1</b><span>link para todo mundo</span></div>
+    <div><b>1 link</b><span>para todo mundo, já com a chave</span></div>
     <div><b>AES-256</b><span>dados e anexos cifrados</span></div>
-    <div><b>R$ 0</b><span>de custo de infraestrutura</span></div>
+    <div><b>R$ 0</b><span>de infraestrutura</span></div>
   </div>
-</div></header>
+</section>
 
-<section id="problema"><div class="wrap">
-  <div class="eyebrow" style="color:#8a6a00">O problema</div>
-  <h2>O pedido se perde entre e-mail, WhatsApp e reunião</h2>
-  <p class="lead">Hoje uma demanda nasce numa reunião ou numa mensagem, passa de mão em mão e ninguém consegue dizer com quem está, há quanto tempo, nem se quem pediu ficou satisfeito.</p>
-  <div class="g3">
-    <div class="card pain"><h3>Sem dono claro</h3><p>A demanda é repassada por mensagem e, depois de duas ou três trocas, ninguém sabe quem está com ela.</p></div>
-    <div class="card pain"><h3>Sem medida de tempo</h3><p>Não dá para saber quantos dias ela ficou em cada setor, nem em qual etapa costuma atrasar.</p></div>
-    <div class="card pain"><h3>Fechada sem conferir</h3><p>Quem executa dá como resolvido, mas quem pediu nunca confirmou que era aquilo mesmo.</p></div>
-  </div>
-</div></section>
 
-<section id="como" class="alt"><div class="wrap">
-  <div class="eyebrow" style="color:#8a6a00">Como funciona</div>
-  <h2>Quatro passos, todos dentro do navegador</h2>
-  <p class="lead">Nada para instalar. Cada pessoa entra com o próprio login e vê o que está com ela, o que pediu e o que o setor dela acompanha.</p>
-  <div class="g4">
-    <div class="card step"><span class="num">1</span><h3>Cadastrar</h3><p>Título, pedido, prazo, setor e pessoa. Sem pessoa definida, vai para o gerente do setor.</p></div>
-    <div class="card step"><span class="num">2</span><h3>Encaminhar</h3><p>Se não é com você, encaminhe com um motivo. O prazo não muda e o tempo em cada setor fica registrado.</p></div>
-    <div class="card step"><span class="num">3</span><h3>Concluir</h3><p>Quem executa descreve a solução. A demanda fica aguardando a confirmação de quem pediu.</p></div>
-    <div class="card step"><span class="num">4</span><h3>Confirmar</h3><p>Quem pediu confirma ou devolve dizendo o que falta. Só então ela conta como concluída.</p></div>
-  </div>
-</div></section>
-
-<section id="funcoes"><div class="wrap">
-  <div class="eyebrow" style="color:#8a6a00">Funcionalidades</div>
-  <h2>O que o painel faz</h2>
-  <p class="lead">Feito para quem pede e executa no dia a dia, e para a leitura rápida de quem gerencia o setor.</p>
-  <div class="g3">
-    <div class="card feat"><h3><i></i>Início e Acompanhamento</h3><p>Ao entrar, cada um vê o que está com ele, o que espera sua confirmação e o resumo de pendentes e atrasadas. Uma tabela com filtros mostra o resto.</p></div>
-    <div class="card feat"><h3><i></i>Conversa ao lado da tarefa</h3><p>Cada demanda tem seu chat. Encaminhamentos, devoluções e soluções aparecem nele com o motivo, na ordem em que aconteceram.</p></div>
-    <div class="card feat"><h3><i></i>Tempo por setor</h3><p>Cada passagem por um setor é cronometrada. Dá para ver onde a demanda ficou parada e se ela já chegou vencida.</p></div>
-    <div class="card feat"><h3><i></i>Confirmação de quem pediu</h3><p>Concluída só conta depois que quem criou confirma. Se faltar algo, ele devolve com o motivo e o prazo segue o mesmo.</p></div>
-    <div class="card feat"><h3><i></i>Visto e online</h3><p>Um tique quando a demanda chega, dois quando o responsável abriu. Uma bolinha verde mostra quem está usando o painel agora.</p></div>
-    <div class="card feat"><h3><i></i>Imagens e tabelas</h3><p>Cole prints e células do Excel no pedido e na conversa. As imagens são reduzidas automaticamente antes de salvar.</p></div>
-    <div class="card feat"><h3><i></i>"Pedido feito em / por"</h3><p>Registra a origem real do pedido (comitê, presidente, órgão público), separada do setor que cadastrou.</p></div>
-    <div class="card feat"><h3><i></i>Cadastro em massa</h3><p>O administrador cola uma planilha com nome, e-mail, telefone, setor e perfil. Quem não tem perfil entra como colaborador.</p></div>
-    <div class="card feat"><h3><i></i>Painel de análise</h3><p>Extrações que se acumulam numa pasta alimentam um painel com tempo por setor, quem mais deixa atrasar e origem dos pedidos.</p></div>
-  </div>
-</div></section>
-
-<section id="demo" class="alt"><div class="wrap">
-  <div class="eyebrow" style="color:#8a6a00">Demonstração · passa e repassa</div>
-  <h2>Duas pessoas, uma demanda, cada uma na sua tela</h2>
-  <p class="lead">Simulação com pessoas fictícias. A janela da esquerda é de quem pediu e a da direita é de quem recebeu. Troque a pessoa no topo de cada janela para ver o mesmo caso pelo olhar de outro setor.</p>
-  <div class="demo">
-    <div class="demo-h"><b>Painel de Demands · simulação</b><span class="clock" id="clk"></span><span class="sp"></span>
-      <label class="chk"><input type="checkbox" id="snd" checked> Som de aviso</label>
-      <button class="btn sm" id="adv" type="button">Avançar 1 dia</button><button class="btn sm" id="rst" type="button">Recomeçar</button></div>
-    <div class="wins"><div class="win" id="w0"></div><div class="win" id="w1"></div></div>
-    <div class="under">
-      <div class="pnl"><h4>Percurso da demanda</h4><div class="s" id="rtS"></div><div id="rt"></div></div>
-      <div class="pnl"><h4>O que o painel avisaria</h4><div class="s">Sino no app, e-mail imediato só no que pede ação, e o resumo das 8h.</div><div class="nlog" id="nlog"></div></div>
+<!-- 2 problema e solução -->
+<section class="slide" data-title="Problema e solução">
+  <div class="eyebrow">Por que um painel</div>
+  <h2>Hoje o pedido se perde. Com o painel, ele tem dono até o fim.</h2>
+  <div class="ps">
+    <div class="ps-now">
+      <div class="ps-h">Hoje</div>
+      <div class="pain-row"><b>Sem dono claro</b><span>Depois de duas trocas por WhatsApp ninguém sabe com quem está.</span></div>
+      <div class="pain-row"><b>Sem medida de tempo</b><span>Não dá para saber quantos dias ficou em cada setor.</span></div>
+      <div class="pain-row"><b>Fechada sem conferir</b><span>Quem executa dá como resolvido; quem pediu nunca confirmou.</span></div>
     </div>
-    <div class="hint" id="hint">Roteiro sugerido: na janela da direita, José abre a demanda (Ana passa a ver dois tiques) e encaminha para Obras com um motivo. Troque a janela da direita para Carlos, conclua, e volte à janela da Ana para confirmar ou devolver. Use "Avançar 1 dia" para ver o prazo vencer.</div>
-  </div>
-</div></section>
-
-<section id="avisos"><div class="wrap">
-  <div class="eyebrow" style="color:#8a6a00">Avisos · proposta</div>
-  <h2>Menos mensagens, e só para quem precisa agir</h2>
-  <p class="lead">Um aviso por demanda por dia cansa e vira ruído. A proposta junta tudo num resumo diário e deixa o aviso imediato só para o que não pode esperar.</p>
-  <div class="g2">
-    <div style="display:grid;gap:18px">
-      <div class="card"><h3>Sino dentro do painel</h3><p>Lista do que mudou para você: demanda nova, devolvida, mensagem, confirmação pendente. Com som discreto e marcar como lido.</p></div>
-      <div class="card"><h3>E-mail imediato só em três casos</h3><p>Chegou uma demanda para você, devolveram uma demanda sua, ou concluíram algo que você precisa confirmar.</p></div>
-      <div class="card"><h3>Resumo das 8h, dias úteis</h3><p>Um e-mail por pessoa com atrasadas, o que vence hoje e amanhã, o que espera sua confirmação e o que chegou desde ontem. O gerente recebe também o resumo do setor.</p></div>
-      <div class="card"><h3>O mesmo texto no WhatsApp e no Teams</h3><p>A lista do resumo é a mesma que sai no Excel para o script do WhatsApp, e o fluxo do Power Automate pode postar no chat do Teams.</p></div>
-    </div>
-    <div class="mail">
-      <div class="mh"><b>Resumo do dia · Painel de Demands</b><br>Para: jose.lima@equatorialenergia.com.br · qua 03/12, 08:00</div>
-      <div class="mb">
-        <div>Bom dia, José. Este é o seu resumo de hoje.</div>
-        <div class="grp" style="color:var(--late)">Atrasadas (1)</div>
-        <ul><li>Levantamento de postes · Comitê de Clientes · venceu 02/12</li></ul>
-        <div class="grp" style="color:#c2410c">Vencem hoje ou amanhã (2)</div>
-        <ul><li>Relatório de reclamações de faturamento · hoje</li><li>Ajuste de cadastro rural · amanhã</li></ul>
-        <div class="grp" style="color:var(--conf)">Esperando sua confirmação (1)</div>
-        <ul><li>Revisão do card do cliente · concluída por Beatriz Rocha</li></ul>
-        <div class="grp" style="color:var(--open)">Chegaram desde ontem (1)</div>
-        <ul><li>Planilha de religações · de Ana Costa (Relacionamento)</li></ul>
-        <div style="margin-top:12px;font-size:13px;color:var(--mt)">Abrir o painel: link do GitHub Pages</div>
+    <div class="ps-arrow">→</div>
+    <div class="ps-steps">
+      <div class="ps-h">Com o painel</div>
+      <div class="steps4">
+        <div class="st4"><span class="num">1</span><b>Cadastrar</b><span>Pedido, prazo, setor e pessoa. Sem pessoa, vai ao gerente do setor.</span></div>
+        <div class="st4"><span class="num">2</span><b>Encaminhar</b><span>Com motivo. O prazo não muda e o tempo de cada setor fica registrado.</span></div>
+        <div class="st4"><span class="num">3</span><b>Concluir</b><span>Quem executa descreve a solução.</span></div>
+        <div class="st4"><span class="num">4</span><b>Confirmar</b><span>Quem pediu confirma ou devolve dizendo o que falta.</span></div>
       </div>
     </div>
   </div>
-</div></section>
+</section>
 
-<section id="perfis" class="alt"><div class="wrap">
-  <div class="eyebrow" style="color:#8a6a00">Perfis e cadastro</div>
-  <h2>Três níveis de acesso, definidos na importação</h2>
-  <p class="lead">Todo mundo entra como colaborador. Gerente e gestor têm o mesmo nível: o gerente é a referência do setor e recebe as demandas que chegam sem pessoa definida.</p>
-  <table class="lim">
-    <tr><th style="width:24%">Perfil</th><th>O que vê e faz</th></tr>
-    <tr><td><b>Colaborador</b><br><span style="color:var(--mt);font-size:13px">padrão</span></td><td>Vê as demandas que criou, que estão ou estiveram com ele e as que acompanha. Cria, conversa, encaminha e conclui o que está com ele.</td></tr>
-    <tr><td><b>Gerente e Gestor</b><br><span style="color:var(--mt);font-size:13px">executivos e líderes</span></td><td>Tudo do colaborador, mais as demandas do setor inteiro, redistribuição entre a equipe e os indicadores do setor. O gerente recebe o que chega ao setor sem pessoa indicada.</td></tr>
-    <tr><td><b>Administrador</b></td><td>Todos os setores, cadastro de pessoas e setores, cadastro em massa, avisos, troca do token e da palavra-chave, exportação para análise.</td></tr>
-  </table>
-  <h3 style="margin:36px 0 10px;font-size:18px">Cadastro em massa: cole a planilha, confira, confirme</h3>
-  <div class="tw"><table class="imp">
-    <tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Setor</th><th>Perfil</th><th>Login</th><th>Situação</th></tr>
-    <tr><td>Maria Souza</td><td>maria.souza@equatorialenergia.com.br</td><td>86 99999-0001</td><td>STC</td><td>Gerente</td><td>maria.souza</td><td class="okc">Pronto</td></tr>
-    <tr><td>Carlos Melo</td><td>carlos.melo@equatorialenergia.com.br</td><td>86 99999-0002</td><td>OBR</td><td>Gestor</td><td>carlos.melo</td><td class="okc">Pronto</td></tr>
-    <tr><td>Beatriz Rocha</td><td>beatriz.rocha@parceira.com.br</td><td>86 99999-0003</td><td>OBR</td><td></td><td>beatriz.rocha</td><td class="okc">Pronto · colaborador</td></tr>
-    <tr class="bad"><td>Maria Souza</td><td>maria.souza@outra.com</td><td>86 99999-0004</td><td>REL</td><td></td><td>maria.souza</td><td class="badc">Login já existe</td></tr>
-    <tr class="bad"><td>João Neto</td><td>joao.neto@equatorialenergia.com.br</td><td>86 99999-0005</td><td>XYZ</td><td></td><td>joao.neto</td><td class="badc">Setor não existe</td></tr>
-  </table></div>
-  <p style="color:var(--mt);font-size:14px;margin:10px 0 0">O login é a parte antes do @, inclusive para e-mails de empresas parceiras. Cada pessoa recebe uma senha temporária e troca no primeiro acesso; o administrador baixa a planilha com os acessos criados.</p>
-</div></section>
+<!-- 3 fluxograma -->
+<section class="slide" data-title="Fluxograma">
+  <div class="eyebrow">Ciclo de vida</div>
+  <div class="flowhead"><h2 style="margin-bottom:6px">Da abertura ao fim: tudo o que pode acontecer</h2><span class="tapme">Clique em um estado para ver o que dá para fazer nele</span></div>
+  <svg class="flow" viewBox="0 0 1500 640" role="img" aria-label="Fluxograma do ciclo de vida da demanda">
+    <defs><marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6b7383"/></marker></defs>
+    <!-- caminhos -->
+    <path class="ar" d="M220 330 H326" marker-end="url(#arw)"/>
+    <path class="ar" d="M560 330 H631" marker-end="url(#arw)"/>
+    <path class="ar" d="M805 330 H846" marker-end="url(#arw)"/>
+    <path class="ar" d="M720 260 V170 H1350 V271" marker-end="url(#arw)"/>
+    <path class="ar" d="M1090 330 H1246" marker-end="url(#arw)"/>
+    <path class="ar" d="M970 385 V455 H525 V389" marker-end="url(#arw)"/>
+    <path class="ar" d="M1430 275 V95 H545 V271" marker-end="url(#arw)"/>
+    <path class="ar" d="M360 275 V232 H480 V271" marker-end="url(#arw)"/>
+    <path class="ar" d="M380 385 V521" marker-end="url(#arw)"/>
+    <!-- nós -->
+    <g class="n"><rect x="20" y="275" width="200" height="110" rx="12" fill="#ffffff" stroke="#1f2733"/>
+      <text class="t" x="40" y="308">Cadastro</text><text class="s" x="40" y="333">título, pedido, prazo,</text><text class="s" x="40" y="353">pedido feito em / por,</text><text class="s" x="40" y="373">setor e pessoa</text></g>
+    <g class="n hot" data-node="pend" tabindex="0" role="button" aria-label="Pendente: o que dá para fazer"><rect x="330" y="275" width="230" height="110" rx="12" fill="#e7effc" stroke="#2563c9"/>
+      <text class="t" x="350" y="308" style="fill:#2563c9">Pendente</text><text class="s" x="350" y="333">com o responsável</text><text class="s" x="350" y="353">✓ enviada · ✓✓ vista</text><text class="s" x="350" y="373">tempo do setor correndo</text></g>
+    <g class="n"><polygon points="720,260 805,330 720,400 635,330" fill="#ffffff" stroke="#1f2733"/>
+      <text class="lbl" x="720" y="325" text-anchor="middle">Quem concluiu</text><text class="lbl" x="720" y="345" text-anchor="middle">é quem pediu?</text></g>
+    <g class="n hot" data-node="conf" tabindex="0" role="button" aria-label="Aguardando confirmação: o que dá para fazer"><rect x="850" y="275" width="240" height="110" rx="12" fill="#fff1d6" stroke="#d08a1a"/>
+      <text class="t" x="870" y="308" style="fill:#a35a00">Aguardando</text><text class="t" x="870" y="331" style="fill:#a35a00">confirmação</text><text class="s" x="870" y="356">de quem pediu</text><text class="s" x="870" y="376">tempo do setor parado</text></g>
+    <g class="n hot" data-node="ok" tabindex="0" role="button" aria-label="Concluída: o que dá para fazer"><rect x="1250" y="275" width="220" height="110" rx="12" fill="#e2f4ea" stroke="#18794e"/>
+      <text class="t" x="1270" y="308" style="fill:#18794e">Concluída</text><text class="s" x="1270" y="333">no prazo ou fora do</text><text class="s" x="1270" y="353">prazo, pela data em que</text><text class="s" x="1270" y="373">o responsável concluiu</text></g>
+    <g class="n hot" data-node="cancel" tabindex="0" role="button" aria-label="Cancelada"><rect x="300" y="525" width="160" height="80" rx="12" fill="#eceef2" stroke="#5c6575"/>
+      <text class="t" x="318" y="557" style="fill:#4b5565">Cancelada</text><text class="s" x="318" y="582">com justificativa</text></g>
+    <!-- rótulos -->
+    <text class="lbl" x="273" y="318" text-anchor="middle">abre</text>
+    <text class="lbl" x="597" y="318" text-anchor="middle">Concluir</text>
+    <text class="lbl" x="826" y="318" text-anchor="middle">não</text>
+    <text class="lbl" x="1035" y="160" text-anchor="middle">sim (ou demanda para si mesmo): conclui direto</text>
+    <text class="lbl" x="1168" y="318" text-anchor="middle">Confirmar</text>
+    <text class="lbl" x="750" y="478" text-anchor="middle">Devolver: diz o que falta e volta ao mesmo responsável</text>
+    <text class="lbl" x="975" y="85" text-anchor="middle">Reabrir (motivo): volta a ser pendente</text>
+    <text class="lbl" x="420" y="204" text-anchor="middle">Encaminhar ou alterar prazo</text><text class="lbl2" x="420" y="222" text-anchor="middle">continua pendente</text>
+    <text class="lbl" x="392" y="455">Cancelar</text>
+    <!-- avisos -->
+    <g class="mail"><rect x="226" y="342" width="98" height="40" rx="6"/><text x="275" y="359" text-anchor="middle">e-mail:</text><text x="275" y="375" text-anchor="middle">nova demanda</text></g>
+    <g class="mail"><rect x="880" y="212" width="182" height="28" rx="6"/><text x="971" y="231" text-anchor="middle">e-mail: confirme a conclusão</text></g>
+    <g class="mail"><rect x="660" y="486" width="180" height="26" rx="6"/><text x="750" y="504" text-anchor="middle">e-mail: devolvida para você</text></g>
+    <g class="mail"><rect x="540" y="528" width="590" height="106" rx="10"/>
+      <text x="560" y="553">Enquanto está pendente:</text>
+      <text x="560" y="576" style="font-weight:400">• Alta sem abrir em 4h, urgente em 2h → lembrete (urgente também ao gerente)</text>
+      <text x="560" y="598" style="font-weight:400">• Vence hoje ou amanhã → entra no resumo das 8h do responsável</text>
+      <text x="560" y="620" style="font-weight:400">• Venceu → cobrança ao responsável e ao gerente do setor</text></g>
+    <g transform="translate(1170 525)"><text class="lbl2" x="0" y="14">Cada passo vira um evento na conversa,</text><text class="lbl2" x="0" y="34">com o motivo, e um commit no histórico.</text><text class="lbl2" x="0" y="64">Encaminhar não muda o prazo; o tempo</text><text class="lbl2" x="0" y="84">de cada setor entra no percurso.</text></g>
+    <g class="plus" pointer-events="none"><circle cx="560" cy="275" r="15"/><text x="560" y="281" text-anchor="middle">+</text><circle cx="1090" cy="275" r="15"/><text x="1090" y="281" text-anchor="middle">+</text><circle cx="1470" cy="275" r="15"/><text x="1470" y="281" text-anchor="middle">+</text><circle cx="460" cy="525" r="15"/><text x="460" y="531" text-anchor="middle">+</text></g>
+  </svg>
+  <div class="remark" id="remark" hidden><button class="rx" type="button" aria-label="Fechar">✕</button><div id="remarkBody"></div>
+    <button class="rgo" type="button" data-goto="4">Ver um exemplo passo a passo, com as telas →</button></div>
+</section>
 
-<section id="seguranca"><div class="wrap">
-  <div class="eyebrow" style="color:#8a6a00">Segurança e governança</div>
-  <h2>Tudo cifrado, sem servidor e sob controle da empresa</h2>
-  <p class="lead">O site roda no navegador e grava num repositório do GitHub, numa branch separada só para dados. O que chega ao repositório já sai cifrado, incluindo as imagens anexadas.</p>
-  <div class="diag">
-    <div><b>Entrada</b>Pessoa digita a palavra-chave da equipe e o seu login</div>
-    <div class="lock"><b>Chave</b>A palavra-chave abre o token guardado cifrado</div>
-    <div><b>Gravação</b>Cada alteração vira um commit na branch de dados</div>
-    <div class="lock"><b>Repositório</b>Só arquivos cifrados com AES-256-GCM</div>
+<!-- 4 exemplo passo a passo -->
+<section class="slide" data-title="Exemplo" style="padding:44px 60px 50px">
+  <div class="eyebrow">Exemplo do começo ao fim</div>
+  <h2 style="font-size:38px;margin-bottom:18px">Ana pede um relatório ao STC. Onde cada um clica.</h2>
+  <div class="walk">
+    <div class="wk"><div class="wk-h"><span class="num">1</span>Ana cadastra</div>
+      <div class="shot"><div class="app mini" style="width:620px">
+        <div class="a-main" style="padding:12px 14px"><div class="apanel" style="padding:12px 14px"><div class="fgrid">
+          <label class="f s3"><span>Demanda *</span><input value="Relatório de reclamações de faturamento" readonly></label>
+          <label class="f"><span>Prazo *</span><input value="03/12/2026" readonly></label>
+          <label class="f s2"><span>Pedido feito em / por</span><input value="Comitê de Clientes" readonly></label>
+          <label class="f"><span>Setor responsável *</span><select><option>STC</option></select></label>
+          <label class="f"><span>Responsável *</span><select><option>José Lima</option></select></label></div>
+          <div class="form-foot" style="margin-top:10px;padding-top:10px"><span class="origin">Setor que abriu: <span class="sec" style="color:#2563eb;border-color:#2563eb66;background:#2563eb14"><i style="background:#2563eb"></i>Relacionamento</span></span><span style="flex:1"></span><button class="abtn pri lg hl">✓ Salvar demanda</button></div></div></div></div></div>
+      <p>Escolhe o setor e a pessoa. Se não souber quem, deixa para o gerente do setor.</p></div>
+
+    <div class="wk"><div class="wk-h"><span class="num">2</span>José recebe</div>
+      <div class="shot"><div class="app mini" style="width:620px"><div class="a-main" style="padding:12px 14px">
+        <div class="sh" style="margin:0 0 8px"><h2>Suas pendências</h2><span class="cpill">1</span></div>
+        <div class="apanel"><table class="dt"><thead><tr><th>Título</th><th>Status</th><th>Prazo</th></tr></thead><tbody>
+          <tr class="hlrow"><td><div class="t">Relatório de reclamações de faturamento <span class="mk">Nova</span></div><div class="pv">Preciso do relatório de novembro, separado por base…</div></td><td><span class="tag st-aberta">⧗ Pendente</span></td><td><span class="due">03/12/2026</span></td></tr></tbody></table></div>
+        <div class="mailchip">✉ E-mail: [Painel Demandas] [ALTA] Nova demanda: Relatório de reclamações…</div></div></div></div>
+      <p>Chega com "Nova", som e e-mail. Quando ele abre, a Ana passa a ver ✓✓ vista.</p></div>
+
+    <div class="wk"><div class="wk-h"><span class="num">3</span>José encaminha para Obras</div>
+      <div class="shot"><div class="app mini" style="width:620px"><div class="a-main" style="padding:12px 14px;background:#e9ecf2">
+        <div class="modal" style="width:100%"><div class="mh">Encaminhar demanda</div><div class="mb">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="f"><span>Para o setor *</span><select><option>Obras</option></select></label><label class="f"><span>Para a pessoa *</span><select><option>Gerente do setor (Carlos Melo)</option></select></label></div>
+          <label class="f"><span>Motivo *</span><input value="A base de postes é com a equipe de obras." readonly></label></div>
+          <div class="mf"><button class="abtn">Cancelar</button><button class="abtn pri hl">Encaminhar</button></div></div></div></div></div>
+      <p>O motivo é obrigatório e aparece na conversa. O prazo continua o mesmo.</p></div>
+
+    <div class="wk"><div class="wk-h"><span class="num">4</span>Carlos conclui</div>
+      <div class="shot"><div class="app mini" style="width:620px"><div class="a-main" style="padding:12px 14px">
+        <div class="apanel task-card" style="padding:14px 16px"><div class="task-head"><div class="m"><div style="display:flex;gap:6px"><span class="tag st-aberta">⧗ Pendente</span><span class="tag pr-alta">↑ Alta</span></div>
+          <div class="task-title" style="font-size:19px">Relatório de reclamações de faturamento</div></div>
+          <div class="task-actions"><button class="abtn ok lg hl">✓ Concluir</button><button class="abtn out lg">↪ Encaminhar</button></div></div>
+          <div class="pedido" style="padding:8px 12px"><div class="pl">Pedido</div><div class="pb" style="font-size:14px">Preciso do relatório de reclamações de faturamento de novembro, separado por base.</div></div></div></div></div></div>
+      <p>Descreve a solução. Como não foi ele quem pediu, a demanda espera a Ana confirmar.</p></div>
+
+    <div class="wk"><div class="wk-h"><span class="num">5</span>Ana confirma ou devolve</div>
+      <div class="shot"><div class="app mini" style="width:620px"><div class="a-main" style="padding:12px 14px">
+        <div class="apanel task-card" style="padding:14px 16px"><div class="task-head"><div class="m"><div style="display:flex;gap:6px"><span class="tag st-conf">⚑ Aguardando confirmação</span><span class="tag cc-ok">✓ No prazo</span></div>
+          <div class="task-title" style="font-size:19px">Relatório de reclamações de faturamento</div></div>
+          <div class="task-actions"><button class="abtn ok lg hl">✓ Confirmar conclusão</button><button class="abtn out">↩ Devolver</button></div></div>
+          <div class="notice" style="margin-top:8px">⚑ Carlos Melo concluiu esta demanda. Confira a solução e confirme, ou devolva se faltar algo.</div>
+          <div class="resolution" style="margin-top:8px"><b>Solução:</b> Relatório anexado na conversa, separado por base.</div></div></div></div></div>
+      <p>Recebe o e-mail "Confirme a conclusão". Se faltar algo, devolve e volta para o Carlos.</p></div>
+
+    <div class="wk"><div class="wk-h"><span class="num">6</span>Fica tudo registrado</div>
+      <div class="shot"><div class="app mini" style="width:620px"><div class="a-main" style="padding:12px 14px">
+        <div class="apanel" style="padding:10px 12px;background:#f7f8fb">
+          <div class="evmsg ev-fwd" style="margin:0 0 6px"><div class="when">01/12/2026 10:12</div><div class="et">José Lima encaminhou para Obras · Carlos Melo</div><div class="ex"><span>Motivo:</span> A base de postes é com a equipe de obras.</div></div>
+          <div class="evmsg ev-conf" style="margin:0 0 6px"><div class="when">02/12/2026 15:40</div><div class="et">Carlos Melo concluiu · aguardando confirmação</div><div class="ex"><span>Solução:</span> Relatório anexado na conversa.</div></div>
+          <div class="evmsg ev-ok" style="margin:0"><div class="when">02/12/2026 16:05</div><div class="et">Ana Costa confirmou a conclusão</div></div></div>
+        <div class="route" style="margin-top:10px"><span style="flex:4;background:#16a34a">STC 1h</span><span style="flex:30;background:#db2777">Obras 1d 5h</span></div></div></div></div>
+      <p>Cada passo fica na conversa com o motivo, e o tempo de cada setor entra no percurso.</p></div>
   </div>
-  <div class="g2">
-    <div class="card secg"><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><div><h3>Dados e anexos cifrados</h3><p>Demandas, conversas, imagens e cadastro são gravados com AES-256-GCM. A chave é derivada da palavra-chave com PBKDF2-SHA256. Sem ela, o repositório mostra apenas texto embaralhado.</p></div></div>
-    <div class="card secg"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/></svg></span><div><h3>Token protegido pela palavra-chave</h3><p>O token do GitHub fica cifrado no site e só abre com a palavra-chave certa. Ele vale para um único repositório, só com permissão de conteúdo, e tem data de expiração.</p></div></div>
-    <div class="card secg"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span><div><h3>Trilha de auditoria</h3><p>Cada criação, encaminhamento, conclusão e mensagem é um commit com autor, data e hora. Qualquer versão anterior pode ser recuperada pelo histórico do repositório.</p></div></div>
-    <div class="card secg"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><h3>Rotina automática no GitHub Actions</h3><p>Um job agendado confere prazos, monta o resumo das 8h, aciona o Power Automate para os e-mails e gera as extrações para análise. A chave fica num segredo do repositório.</p></div></div>
-    <div class="card secg"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></span><div><h3>Login individual</h3><p>Além da palavra-chave da equipe, cada pessoa tem login e senha. Tudo que ela faz fica registrado no nome dela.</p></div></div>
-    <div class="card secg"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></span><div><h3>Sem banco e sem licença</h3><p>Hospedagem no GitHub Pages, sem banco de dados nem serviço pago. Não há serviço que pause por falta de uso.</p></div></div>
-  </div>
-  <h3 style="margin:40px 0 12px;font-size:18px">Pontos de atenção e como estão tratados</h3>
-  <div class="tw"><table class="lim">
-    <tr><th style="width:34%">Ponto</th><th>Tratamento</th></tr>
-    <tr><td>Quem tem a palavra-chave tem o token, que permite gravar no repositório</td><td>As permissões de perfil valem na tela; o histórico do git mostra quem fez cada alteração. A palavra-chave e o token podem ser trocados pelo administrador a qualquer momento, sem perder dados.</td></tr>
-    <tr><td>O GitHub limita as gravações (cerca de 500 por hora para todos juntos)</td><td>Para a equipe atual sobra folga. A atualização automática só pergunta se algo mudou, o que não gasta essa cota, e só baixa o que mudou.</td></tr>
-    <tr><td>Duas pessoas alterando ao mesmo tempo</td><td>Cada demanda, mensagem e anexo é um arquivo próprio. Se der conflito, o painel relê e grava de novo sozinho.</td></tr>
-    <tr><td>GitHub Pages gratuito exige repositório público</td><td>Por isso tudo é cifrado antes de sair do navegador. Se a TI preferir, a mesma estrutura funciona num repositório privado de plano pago.</td></tr>
-  </table></div>
-</div></section>
+</section>
 
-<section id="implantacao" class="alt"><div class="wrap">
-  <div class="eyebrow" style="color:#8a6a00">Implantação</div>
-  <h2>Um repositório, uma branch de dados, um fluxo de e-mail</h2>
-  <p class="lead">A configuração fica em poucos lugares, e levar para outra área é copiar o repositório e trocar a lista de setores.</p>
+<!-- 5 demonstração -->
+<section class="slide" data-title="Demonstração" style="padding:34px 50px 40px">
+  <div class="demo-top"><h2>Experimente: duas pessoas, cada uma na sua tela</h2><span class="sp"></span><span class="clock" id="clk"></span>
+    <label class="chk"><input type="checkbox" id="snd" checked> som</label>
+    <button class="dbtn" id="adv" type="button">Avançar 1 dia</button><button class="dbtn" id="rst" type="button">Recomeçar</button></div>
+  <div class="wins"><div class="win" id="w0"></div><div class="win" id="w1"></div></div>
+  <div class="ticker"><b>Avisos que sairiam</b><div class="rows" id="tick"></div></div>
+</section>
+
+<!-- 6 avisos -->
+<section class="slide" data-title="Avisos" style="padding:50px 64px 56px">
+  <div class="eyebrow">Avisos por e-mail</div>
+  <h2 style="font-size:40px;margin-bottom:16px">Na hora, só o que pede ação. O resto num resumo às 8h.</h2>
+  <div class="av-grid">
+    <div class="rules">
+      <div class="rule"><span class="chip c-now">na hora</span><div><b>Chegou demanda para você</b><span>Responsável. Urgente: também os gerentes do setor.</span></div></div>
+      <div class="rule"><span class="chip c-now">na hora</span><div><b>Devolvida ou reaberta</b><span>Responsável.</span></div></div>
+      <div class="rule"><span class="chip c-now">na hora</span><div><b>Concluída, confirme</b><span>Quem pediu.</span></div></div>
+      <div class="rule"><span class="chip c-now">lembrete</span><div><b>Alta sem abrir em 4h, urgente em 2h</b><span>Responsável (urgente: + gerentes).</span></div></div>
+      <div class="rule"><span class="chip c-late">cobrança</span><div><b>Venceu sem conclusão</b><span>Responsável e gerentes do setor.</span></div></div>
+      <div class="rule"><span class="chip c-dig">resumo 8h</span><div><b>Atrasadas, vencendo, para confirmar, novas, equipe</b><span>Cada pessoa com pendência, dias úteis.</span></div></div>
+      <div class="rule"><span class="chip c-app">e no Teams</span><div><b>E-mail e Teams, você escolhe</b><span>Cada regra tem hora, destinatários e canal editáveis pelo admin.</span></div></div>
+      <div class="subj" style="margin-top:6px">Todo assunto começa com <b>[Painel Demandas]</b>: uma regra no Outlook separa tudo numa pasta.</div>
+    </div>
+    <div class="mailbox"><div class="mh"><b>[Painel Demandas] [URGENTE] Nova demanda: Card do Cliente · prazo 30/11</b>Para: José Lima · na hora</div><div class="mb"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f2f4f8"><tr><td align="center" style="padding:16px">
+<table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%">
+<tr><td style="background:#1f2733;border-bottom:4px solid #ffc20e;padding:12px 16px;font:700 15px Segoe UI,Arial,sans-serif;color:#ffffff">Painel de Demandas · EQTL PI Sul</td></tr>
+<tr><td style="background:#f7f8fb;padding:14px 16px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+<tr><td style="padding:0 0 8px;font:14px Segoe UI,Arial,sans-serif;color:#1f2733">José, há novidades no painel para você.</td></tr><tr><td style="padding:12px 0 6px;font:700 12px Segoe UI,Arial,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#2563c9">Chegou para você</td></tr><tr><td style="padding:0 0 10px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e1e5ee;border-left:4px solid #2563c9;border-radius:6px;background:#ffffff">
+<tr><td style="padding:10px 14px;font:14px Segoe UI,Arial,sans-serif;color:#1f2733">
+<div style="font-weight:700;font-size:15px;color:#1f2a5c">Card do Cliente</div>
+<div style="font-size:12.5px;color:#5f6b7a;margin-top:2px">REL-20261125-GR01-001 · STC · prazo 30/11 · <b style="color:#b91c1c">URGENTE</b></div>
+<div style="margin-top:6px;font-size:13.5px">De <b>Ana Costa</b><br>Pedido feito em / por: Comitê de Clientes</div>
+<div style="margin-top:8px"><a href="https://lucascruz.github.io/Painel-de-Demandas/#/demandas/1" style="display:inline-block;background:#283672;color:#ffffff;text-decoration:none;padding:6px 12px;border-radius:5px;font-size:13px;font-weight:600">Abrir no painel</a></div>
+</td></tr></table></td></tr></table></td></tr>
+<tr><td style="padding:10px 16px;font:12px Segoe UI,Arial,sans-serif;color:#6b7383">Aviso automático do Painel de Demandas. Não responda este e-mail.</td></tr>
+</table></td></tr></table></div></div>
+    <div class="mailbox"><div class="mh"><b>[Painel Demandas] Resumo de qui 26/11 · 1 atrasada(s) · 1 para confirmar…</b>Para: Ana Costa · 8h, dias úteis</div><div class="mb"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f2f4f8"><tr><td align="center" style="padding:16px">
+<table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%">
+<tr><td style="background:#1f2733;border-bottom:4px solid #ffc20e;padding:12px 16px;font:700 15px Segoe UI,Arial,sans-serif;color:#ffffff">Painel de Demandas · EQTL PI Sul</td></tr>
+<tr><td style="background:#f7f8fb;padding:14px 16px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+<tr><td style="padding:0 0 8px;font:14px Segoe UI,Arial,sans-serif;color:#1f2733">Bom dia, Ana. Este é o seu resumo de hoje.</td></tr><tr><td style="padding:12px 0 6px;font:700 12px Segoe UI,Arial,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#b91c1c">Atrasadas com você (1)</td></tr><tr><td style="padding:0 0 10px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e1e5ee;border-left:4px solid #b91c1c;border-radius:6px;background:#ffffff">
+<tr><td style="padding:10px 14px;font:14px Segoe UI,Arial,sans-serif;color:#1f2733">
+<div style="font-weight:700;font-size:15px;color:#1f2a5c">Negativação e Protesto de Lírio Parisotto</div>
+<div style="font-size:12.5px;color:#5f6b7a;margin-top:2px">REL-20261125-GR01-002 · Garantia · prazo 22/11 · <b style="color:#b45309">Alta</b></div>
+<div style="margin-top:6px;font-size:13.5px">Venceu em 22/11.</div>
+<div style="margin-top:8px"><a href="https://lucascruz.github.io/Painel-de-Demandas/#/demandas/2" style="display:inline-block;background:#283672;color:#ffffff;text-decoration:none;padding:6px 12px;border-radius:5px;font-size:13px;font-weight:600">Abrir no painel</a></div>
+</td></tr></table></td></tr><tr><td style="padding:12px 0 6px;font:700 12px Segoe UI,Arial,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#c2410c">Vencem hoje ou amanhã (1)</td></tr><tr><td style="padding:0 0 10px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e1e5ee;border-left:4px solid #c2410c;border-radius:6px;background:#ffffff">
+<tr><td style="padding:10px 14px;font:14px Segoe UI,Arial,sans-serif;color:#1f2733">
+<div style="font-weight:700;font-size:15px;color:#1f2a5c">Quartil dos Postos Credenciados</div>
+<div style="font-size:12.5px;color:#5f6b7a;margin-top:2px">STC-20261125-GS01-001 · Relacionamento · prazo 26/11</div>
+
+<div style="margin-top:8px"><a href="https://lucascruz.github.io/Painel-de-Demandas/#/demandas/3" style="display:inline-block;background:#283672;color:#ffffff;text-decoration:none;padding:6px 12px;border-radius:5px;font-size:13px;font-weight:600">Abrir no painel</a></div>
+</td></tr></table></td></tr><tr><td style="padding:12px 0 6px;font:700 12px Segoe UI,Arial,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#a35a00">Esperando sua confirmação (1)</td></tr><tr><td style="padding:0 0 10px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e1e5ee;border-left:4px solid #a35a00;border-radius:6px;background:#ffffff">
+<tr><td style="padding:10px 14px;font:14px Segoe UI,Arial,sans-serif;color:#1f2733">
+<div style="font-weight:700;font-size:15px;color:#1f2a5c">Revisar Metas Matriz de Relacionamento</div>
+<div style="font-size:12.5px;color:#5f6b7a;margin-top:2px">REL-20261125-GR01-004 · Facilities · prazo 03/12</div>
+<div style="margin-top:6px;font-size:13.5px">Concluída por <b>Clara Ramos</b>.</div>
+<div style="margin-top:8px"><a href="https://lucascruz.github.io/Painel-de-Demandas/#/demandas/6" style="display:inline-block;background:#283672;color:#ffffff;text-decoration:none;padding:6px 12px;border-radius:5px;font-size:13px;font-weight:600">Abrir no painel</a></div>
+</td></tr></table></td></tr><tr><td style="padding:12px 0 6px;font:700 12px Segoe UI,Arial,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#2563c9">Chegaram desde o último resumo (1)</td></tr><tr><td style="padding:0 0 10px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e1e5ee;border-left:4px solid #2563c9;border-radius:6px;background:#ffffff">
+<tr><td style="padding:10px 14px;font:14px Segoe UI,Arial,sans-serif;color:#1f2733">
+<div style="font-weight:700;font-size:15px;color:#1f2a5c">Levantamento de luminárias queimadas</div>
+<div style="font-size:12.5px;color:#5f6b7a;margin-top:2px">FAC-20261125-GF01-001 · AT · prazo 28/11</div>
+<div style="margin-top:6px;font-size:13.5px">Pedido feito em / por: Associação de moradores</div>
+<div style="margin-top:8px"><a href="https://lucascruz.github.io/Painel-de-Demandas/#/demandas/7" style="display:inline-block;background:#283672;color:#ffffff;text-decoration:none;padding:6px 12px;border-radius:5px;font-size:13px;font-weight:600">Abrir no painel</a></div>
+</td></tr></table></td></tr><tr><td style="padding:12px 0 6px;font:700 12px Segoe UI,Arial,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#b91c1c">Atrasadas da sua equipe (1)</td></tr><tr><td style="padding:0 0 10px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e1e5ee;border-left:4px solid #b91c1c;border-radius:6px;background:#ffffff">
+<tr><td style="padding:10px 14px;font:14px Segoe UI,Arial,sans-serif;color:#1f2733">
+<div style="font-weight:700;font-size:15px;color:#1f2a5c">Povoado Sítio do Mocó</div>
+<div style="font-size:12.5px;color:#5f6b7a;margin-top:2px">OBR-20261125-GO01-001 · Manutenção · prazo 16/11 · <b style="color:#b91c1c">URGENTE</b></div>
+<div style="margin-top:6px;font-size:13.5px">Com <b>Bruno Alves</b>, venceu em 16/11.</div>
+<div style="margin-top:8px"><a href="https://lucascruz.github.io/Painel-de-Demandas/#/demandas/5" style="display:inline-block;background:#283672;color:#ffffff;text-decoration:none;padding:6px 12px;border-radius:5px;font-size:13px;font-weight:600">Abrir no painel</a></div>
+</td></tr></table></td></tr></table></td></tr>
+<tr><td style="padding:10px 16px;font:12px Segoe UI,Arial,sans-serif;color:#6b7383">Aviso automático do Painel de Demandas. Não responda este e-mail.</td></tr>
+</table></td></tr></table></div></div>
+  </div>
+</section>
+
+<!-- 7 tempo por setor -->
+<section class="slide" data-title="Tempo por setor">
+  <div class="eyebrow">Tempo por setor</div>
+  <h2>Cada passagem por um setor é cronometrada</h2>
+  <div class="tps">
+    <div class="drawer-mock">
+      <div class="dh">Percurso nos setores <span>✕</span></div>
+      <div class="db">
+        <div class="hintline">Tempo corrido. Trocar a pessoa dentro do mesmo setor não reinicia o tempo do setor; encaminhar não muda o prazo.</div>
+        <div class="timeline">
+          <div class="tl-item"><div class="head"><span class="sec" style="color:#16a34a;border-color:#16a34a66;background:#16a34a14"><i style="background:#16a34a"></i>STC</span><b>1d 2h</b></div>
+            <div class="sub">Entrada 01/12/2026 09:03 · saída 02/12/2026 11:10</div>
+            <div class="tl-person">José Lima · 3h</div><div class="tl-person">Maria Souza · 23h <span class="muted">(repassada dentro do setor)</span></div></div>
+          <div class="tl-item"><div class="head"><span class="sec" style="color:#db2777;border-color:#db277766;background:#db277714"><i style="background:#db2777"></i>Obras</span><b>2d 4h</b></div>
+            <div class="sub">Entrada 02/12/2026 11:10 · saída 04/12/2026 15:20</div><div class="sub">Encaminhado por Maria Souza: depende de levantamento de campo</div>
+            <div class="late-flag">Chegou vencida a este setor</div><div class="tl-person">Carlos Melo · 2d 4h</div></div>
+          <div class="tl-item current"><div class="head"><span class="sec" style="color:#16a34a;border-color:#16a34a66;background:#16a34a14"><i style="background:#16a34a"></i>STC</span><b>5h</b></div>
+            <div class="sub">Entrada 04/12/2026 15:20 · até agora</div><div class="sub">Encaminhado por Carlos Melo: levantamento feito, falta consolidar</div><div class="tl-person">José Lima · 5h (atual)</div></div>
+        </div>
+        <div class="acc"><b>Tempo acumulado por setor</b>
+          <div class="accrow"><span class="sec" style="color:#db2777;border-color:#db277766;background:#db277714"><i style="background:#db2777"></i>Obras</span><span class="accbar"><i style="width:100%;background:#db2777"></i></span><b>2d 4h</b></div>
+          <div class="accrow"><span class="sec" style="color:#16a34a;border-color:#16a34a66;background:#16a34a14"><i style="background:#16a34a"></i>STC</span><span class="accbar"><i style="width:59%;background:#16a34a"></i></span><b>1d 7h</b><small>2 passagens</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="tps-txt">
+      <div class="big-route"><span style="flex:26;background:#16a34a">STC 1d 2h</span><span style="flex:52;background:#db2777">Obras 2d 4h</span><span style="flex:5;background:#16a34a;opacity:.75">STC</span></div>
+      <div class="tp"><b>Onde a demanda ficou parada</b><span>Abrindo o percurso de qualquer demanda, cada setor aparece com entrada, saída, quem encaminhou e por quê.</span></div>
+      <div class="tp"><b>Quem recebeu já vencida</b><span>A passagem que começou depois do prazo leva a marca "chegou vencida", para o atraso não cair na conta errada.</span></div>
+      <div class="tp"><b>O relógio para na conclusão</b><span>Enquanto espera a confirmação de quem pediu, o tempo não conta contra o setor que executou.</span></div>
+      <div class="tp"><b>Por pessoa também</b><span>Dentro do setor, cada pessoa que teve a demanda aparece com o seu tempo.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 indicadores e análise -->
+<section class="slide" data-title="Indicadores" style="padding:46px 64px 54px">
+  <div class="eyebrow">Indicadores e análise</div>
+  <h2 style="font-size:40px;margin-bottom:14px">Para os gerentes: o que está atrasando, onde e com quem</h2>
+  <div class="bi">
+    <div class="bi-panel">
+      <div class="bi-cap">No painel · Gestão › Indicadores <span>dados de exemplo</span></div>
+      <div class="app" style="height:auto;background:#f2f4f8"><div class="a-main" style="padding:14px 16px;overflow:visible">
+        <div class="fbar"><label class="f"><span>Período</span><select><option>Últimos 30 dias</option></select></label><label class="f"><span>Origem</span><select><option>Todos</option></select></label><label class="f"><span>Setor atual</span><select><option>Todos</option></select></label><label class="f"><span>Prioridade</span><select><option>Todas</option></select></label></div>
+        <div class="kcap">Estoque atual</div>
+        <div class="kpis4"><div class="kpi2"><div class="k">Abertas</div><div class="v">14</div><div class="d">Situação agora</div></div><div class="kpi2"><div class="k">Vencidas</div><div class="v red">3</div><div class="d">Com prazo vencido</div></div><div class="kpi2"><div class="k">Vencendo</div><div class="v orange">5</div><div class="d">Hoje ou em 3 dias</div></div><div class="kpi2"><div class="k">Tempo de atendimento</div><div class="v">4,2 d</div><div class="d">Média; mediana 3,1 d</div></div></div>
+        <div class="kcap">No período</div>
+        <div class="kpis4"><div class="kpi2"><div class="k">Entradas</div><div class="v">38</div></div><div class="kpi2"><div class="k">Concluídas</div><div class="v green">31</div></div><div class="kpi2"><div class="k">Dentro do prazo</div><div class="v green">24</div><div class="d">77%</div></div><div class="kpi2"><div class="k">Fora do prazo</div><div class="v red">7</div><div class="d">2 com prazo alterado</div></div></div>
+        <div class="apanel" style="padding:12px 14px;margin-top:12px"><div style="font-weight:600;font-size:14px;margin-bottom:6px">Tempo de permanência por setor (média em dias)</div>
+          <div class="hbars" id="biBars"></div></div>
+      </div></div>
+    </div>
+    <div class="bi-panel">
+      <div class="bi-cap">Painel de análise · junta as extrações de vários meses <span>dados de exemplo</span></div>
+      <div class="an">
+        <div class="an-k"><div><b>180</b><span>Demandas</span></div><div><b class="red">2</b><span>Atrasadas em aberto</span></div><div><b>72%</b><span>Concluídas no prazo</span></div><div><b>4,2</b><span>Dias até concluir</span></div></div>
+        <div class="an-card"><div class="an-t">Quem mais deixa atrasar</div><div class="an-s">Dias que as demandas ficaram com a pessoa depois de vencidas</div><div class="hbars" id="anLate"></div></div>
+        <div class="an-card"><div class="an-t">Pedido feito em / por</div><div class="an-s">Quantidade de demandas por origem do pedido</div><div class="hbars" id="anSrc"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 outras funcionalidades -->
+<section class="slide" data-title="Funcionalidades" style="padding:50px 64px 56px">
+  <div class="eyebrow">E mais</div>
+  <h2 style="font-size:40px;margin-bottom:16px">O dia a dia, em detalhes</h2>
+  <div class="ff">
+    <div class="fcard"><div class="fv"><div class="app" style="height:auto;background:#f7f8fb;padding:10px">
+      <div class="bubble"><span class="avatar on">CM</span><div class="bb"><div class="who">Carlos Melo<span class="when">02/12 14:20</span></div>Segue o print e a lista:
+        <div class="fakeimg"><i style="height:40%"></i><i style="height:70%"></i><i style="height:55%"></i><i style="height:90%"></i><i style="height:65%"></i></div>
+        <table class="mini-t"><tr><th>Base</th><th>Postes</th></tr><tr><td>Picos</td><td>12</td></tr><tr><td>Oeiras</td><td>7</td></tr></table></div></div></div></div>
+      <b>Prints e tabelas do Excel</b><span>Cole na conversa ou no pedido. Imagens reduzidas automaticamente.</span></div>
+    <div class="fcard"><div class="fv"><div class="app" style="height:auto;background:#fff;padding:14px;display:grid;gap:10px">
+      <div class="person"><span class="avatar">JL</span>José Lima <span class="seen">✓ não vista</span></div>
+      <div class="person"><span class="avatar on">JL</span>José Lima <span class="seen on">✓✓ vista 01/12 09:41</span></div></div></div>
+      <b>Visto e online</b><span>Um tique quando chega, dois quando abriu. Bolinha verde para quem está usando agora.</span></div>
+    <div class="fcard"><div class="fv"><div class="app" style="height:auto;background:#fff;padding:14px;display:flex;gap:6px;flex-wrap:wrap;align-content:flex-start">
+      <span class="tag" style="background:#efe8fb;color:#5b3aa0">Comitê de Clientes</span><span class="tag" style="background:#e6f4f1;color:#1d6b5f">Presidente</span><span class="tag" style="background:#e8f0fb;color:#2c4ba6">ANEEL</span><span class="tag" style="background:#fbeef3;color:#9c2c5a">Ouvidoria</span><span class="tag" style="background:#eef3e6;color:#4b6a1d">Reunião de diretoria</span></div></div>
+      <b>Pedido feito em / por</b><span>A origem real do pedido, separada do setor. Vira filtro e indicador.</span></div>
+    <div class="fcard"><div class="fv"><div class="app" style="height:auto;background:#f2f4f8;padding:12px;display:flex;gap:12px;align-items:flex-start">
+      <div class="a-side" style="height:auto;border-radius:8px;border:1px solid #dde1e8"><div class="a-nav on"><span class="ic t-home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></span><span class="cnt">2</span></div></div>
+      <div class="toast" style="position:static">Chegou uma novidade para você.</div></div></div>
+      <b>Contador e som</b><span>Novidade chega com número no menu e um som curto, que dá para silenciar.</span></div>
+    <div class="fcard"><div class="fv"><div class="app" style="height:auto;background:#fff;padding:10px"><table class="mini-t wide"><tr><th>Nome</th><th>Setor</th><th>Perfil</th><th></th></tr><tr><td>Maria Souza</td><td>STC</td><td>Gerente</td><td class="okc">Pronto</td></tr><tr><td>João Lima</td><td>REL</td><td></td><td class="okc">Pronto</td></tr><tr class="bad"><td>João Neto</td><td>XYZ</td><td></td><td class="badc">Setor não existe</td></tr></table></div></div>
+      <b>Cadastro em massa</b><span>Cole a planilha de pessoas; o painel confere, cadastra e gera os acessos.</span></div>
+    <div class="fcard"><div class="fv"><div class="app" style="height:auto;background:#fff;padding:10px"><table class="mini-t wide xl"><tr><th>nome</th><th>numero</th><th>lista</th></tr><tr><td>José Lima</td><td>+5588999…</td><td>• Atrasada: Relatório… <br>• Vence hoje: Card do…</td></tr><tr><td>Ana Costa</td><td>+5588999…</td><td>• Confirme a conclusão…</td></tr></table></div></div>
+      <b>Excel para o WhatsApp</b><span>O mesmo resumo do e-mail, uma linha por pessoa, para o script de envio.</span></div>
+    <div class="fcard"><div class="fv"><div class="app" style="height:auto;background:#fff;padding:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><b>Relação de contas</b><span style="color:#6b7383">versão 4 · Alterações</span></div>
+      <table class="mini-t wide"><tr><th>Conta</th><th>Situação</th><th>Valor</th></tr><tr><td>3004512</td><td>Negociada</td><td>R$ 1.240,00</td></tr><tr><td>3008877</td><td>Em aberto</td><td>R$ 980,50</td></tr></table></div></div>
+      <b>Tabelas de acompanhamento</b><span>Listas que a equipe atualiza durante a demanda, com histórico de cada alteração.</span></div>
+    <div class="fcard"><div class="fv"><div class="app" style="height:auto;background:#fff;padding:10px">
+      <div class="mailchip" style="margin:0 0 6px">[Painel Demandas] [URGENTE] Ainda não aberta: …</div><div class="mailchip" style="margin:0">[Painel Demandas] Atrasada na sua equipe: …</div></div></div>
+      <b>Cobrança automática</b><span>O gerente recebe quando algo atrasa com alguém da equipe, sem precisar perguntar.</span></div>
+  </div>
+</section>
+
+<!-- 10 perfis e próximos passos -->
+<section class="slide" data-title="Perfis e próximos passos" style="justify-content:center">
+  <div class="eyebrow">Para começar</div>
+  <h2>Quem vê o quê, e os próximos passos</h2>
+  <div class="g3" style="margin-top:6px">
+    <div class="card"><h3>Colaborador <span style="font-size:15px;color:var(--muted);font-weight:400">· padrão</span></h3><p>O que criou, o que está ou esteve com ele e o que acompanha.</p></div>
+    <div class="card"><h3>Gerente e Executivo/Líder</h3><p>Um gerente por setor: recebe o que chega sem pessoa definida e as cobranças da equipe. Executivos/líderes são os delegados dele: veem o setor inteiro, redistribuem e acessam a Gestão.</p></div>
+    <div class="card"><h3>Administrador</h3><p>Todos os setores, pessoas, cadastro em massa, avisos e dados.</p></div>
+  </div>
+  <div class="next">
+    <div><span class="num">1</span>Importar as pessoas com os perfis</div>
+    <div><span class="num">2</span>Definir o gerente de cada setor</div>
+    <div><span class="num">3</span>Testar os avisos em modo teste</div>
+    <div><span class="num">4</span>Desligar o modo teste e começar</div>
+    <div><span class="num">5</span>Rever o tempo por setor com os gerentes no 1º mês</div>
+  </div>
+</section>
+
+<!-- 11 bastidores -->
+<section class="slide" data-title="Bastidores" style="justify-content:center">
+  <div class="eyebrow">Bastidores</div>
+  <h2>Sem servidor, sem licença, tudo cifrado</h2>
+  <div class="pipe">
+    <div><b>Painel</b>Roda no navegador (GitHub Pages). Cada ação vira um commit cifrado.</div>
+    <div class="dark"><b>Rotina</b>GitHub Actions, a cada 20 min e a cada mudança, decide os avisos.</div>
+    <div><b>Issue privada</b>A lista de e-mails vai para o repositório privado de avisos.</div>
+    <div class="dark"><b>Power Automate</b>Lê a issue e envia pelo Outlook. Conector padrão.</div>
+  </div>
   <div class="g3">
-    <div class="card"><h3>Repositório</h3><p>Branch principal com o site (GitHub Pages) e branch de dados com os arquivos cifrados. O token cifrado vai no arquivo de configuração.</p></div>
-    <div class="card"><h3>GitHub Actions</h3><p>Rotina a cada 30 minutos em horário comercial e o resumo às 8h. A chave de decifrar fica nos segredos do repositório.</p></div>
-    <div class="card"><h3>Power Automate</h3><p>Um fluxo recebe a lista de avisos e envia pelo Outlook, ou posta no Teams. Sem conector premium.</p></div>
+    <div class="card"><h3>Cifrado</h3><p>Demandas, conversas e imagens em AES-256. O link já traz a chave da equipe.</p></div>
+    <div class="card"><h3>Histórico</h3><p>Cada alteração tem data, hora e autor, e qualquer versão pode ser recuperada.</p></div>
+    <div class="card"><h3>Custo zero</h3><p>GitHub Pages, GitHub Actions e Power Automate padrão, sem banco nem serviço pago.</p></div>
   </div>
-  <div class="note" style="margin-top:26px">Próximos passos sugeridos: importar a lista de pessoas com os perfis, definir o gerente de cada setor, ligar o resumo das 8h e acompanhar no primeiro mês o tempo por setor com os gerentes.</div>
-</div></section>
+</section>
 
-<footer><div class="wrap">Painel de Demands · EQTL PI Sul &nbsp;·&nbsp; Contato: <b>lucas.cruz@equatorialenergia.com.br</b></div></footer>
+
+
+<div id="bar"></div>
+</div></div>
+<div id="nav"><button id="prev" type="button" aria-label="Slide anterior">‹ Anterior</button><span id="count"></span><button id="next" type="button" aria-label="Próximo slide">Próximo ›</button></div>
 
 <script>
 "use strict";
-const $=id=>document.getElementById(id);
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-/* ===== cenário fictício ===== */
-const SEC={REL:{n:'Relacionamento',c:'#2563eb'},STC:{n:'STC',c:'#0891b2'},OBR:{n:'Obras',c:'#db2777'}};
-const P={
-  ana:{n:'Ana Costa',s:'REL',r:'Colaborador',e:'ana.costa'},
-  jose:{n:'José Lima',s:'STC',r:'Colaborador',e:'jose.lima'},
-  maria:{n:'Maria Souza',s:'STC',r:'Gerente',e:'maria.souza'},
-  carlos:{n:'Carlos Melo',s:'OBR',r:'Gerente',e:'carlos.melo'},
-  bia:{n:'Beatriz Rocha',s:'OBR',r:'Colaborador',e:'beatriz.rocha'},
-  paulo:{n:'Paulo Reis',s:'REL',r:'Gerente',e:'paulo.reis'}};
-const GER={REL:'paulo',STC:'maria',OBR:'carlos'};
-const BASE=new Date(2026,11,1); // ter 01/12/2026
-const WD=['dom','seg','ter','qua','qui','sex','sáb'];
-const dayOf=h=>Math.floor(h/24);
-const dLabel=d=>{const x=new Date(BASE);x.setDate(x.getDate()+d);return `${WD[x.getDay()]} ${String(x.getDate()).padStart(2,'0')}/${String(x.getMonth()+1).padStart(2,'0')}`;};
-const hLabel=h=>`${dLabel(dayOf(h))}, ${String(h%24).padStart(2,'0')}h`;
-const dur=h=>{h=Math.max(0,Math.round(h));const d=Math.floor(h/24),r=h%24;return d?`${d}d ${r}h`:`${r}h`;};
-const first=n=>n.split(' ')[0];
-const secChip=s=>`<span class="sec" style="color:${SEC[s].c};border-color:${SEC[s].c}55;background:${SEC[s].c}12"><i style="background:${SEC[s].c}"></i>${SEC[s].n}</span>`;
-
-let S,W;
-function seed(){
-  S={h:8,seq:0,ds:[],bell:{},log:[],focus:null};
-  Object.keys(P).forEach(k=>S.bell[k]=[]);
-  W=[{p:'ana',v:'list',cur:null,f:null,dr:{},bellOpen:false},{p:'jose',v:'list',cur:null,f:null,dr:{},bellOpen:false}];
-  S.h=8; create('ana','Relatório de reclamações de faturamento','Preciso do relatório de reclamações de faturamento de novembro, separado por base, para o comitê de quinta.','Comitê de Clientes','STC','jose',2);
-  S.h=10;
+/* ===================== navegação do deck ===================== */
+const stage = document.getElementById("stage");
+const slides = [...document.querySelectorAll(".slide")];
+let cur = 0;
+function fit() { const s = Math.min(innerWidth / 1600, innerHeight / 900) * 0.97; stage.style.transform = `scale(${s})`; }
+function show(i) {
+  cur = Math.max(0, Math.min(slides.length - 1, i));
+  slides.forEach((s, k) => s.classList.toggle("on", k === cur));
+  document.getElementById("count").textContent = `${cur + 1} / ${slides.length}`;
+  document.getElementById("bar").style.width = `${((cur + 1) / slides.length) * 100}%`;
+  const h = `#slide-${cur + 1}`;
+  if (location.hash !== h) history.replaceState(null, "", h);
+  if (typeof onShow === "function") onShow(slides[cur]);
 }
-const D=id=>S.ds.find(d=>d.id===id);
+addEventListener("resize", fit); fit();
+document.getElementById("prev").onclick = () => show(cur - 1);
+document.getElementById("next").onclick = () => show(cur + 1);
+addEventListener("keydown", (e) => {
+  if (e.target.closest("input, textarea, select, .win")) return;
+  if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); show(cur + 1); }
+  if (["ArrowLeft", "PageUp"].includes(e.key)) { e.preventDefault(); show(cur - 1); }
+});
+const fromHash = () => { const m = /slide-(\d+)/.exec(location.hash); show(m ? Number(m[1]) - 1 : 0); };
+/* ===================== v2: fluxograma clicável, prints e gráficos ===================== */
+const REMARK = {
+  pend: { c: "#2563c9", t: "Pendente", s: "Está com o responsável. Enquanto isso, dá para:", a: [
+    ["💬", "Conversar", "todos os envolvidos", "Mensagem, print colado e tabela do Excel. Os outros veem o contador e ouvem o som."],
+    ["↪", "Encaminhar", "responsável ou gerente", "Para outro setor ou pessoa, com motivo. O prazo continua o mesmo e o tempo do setor anterior fecha."],
+    ["⇄", "Repassar na equipe", "gerente do setor", "Troca a pessoa dentro do setor sem reiniciar o tempo do setor."],
+    ["📅", "Alterar prazo", "quem pediu ou gerente", "Nova data com justificativa. A demanda fica marcada como \"prazo alterado\"."],
+    ["👁", "Acompanhantes", "quem pediu, responsável, gerentes", "Inclui pessoas que passam a ver a demanda e as novidades."],
+    ["▦", "Tabela de acompanhamento", "envolvidos", "Uma lista que a equipe atualiza durante a demanda, com o histórico de cada versão."],
+    ["✓", "Concluir", "responsável ou gerente", "Descreve a solução. Vai para \"aguardando confirmação\", ou fecha direto se foi a própria pessoa que pediu."],
+    ["✕", "Cancelar", "quem pediu ou gerentes", "Com justificativa. Não apaga: fica registrada como cancelada."]] },
+  conf: { c: "#a35a00", t: "Aguardando confirmação", s: "O responsável concluiu. O relógio do setor parou. Quem pediu decide:", a: [
+    ["✓", "Confirmar conclusão", "quem pediu", "Fecha a demanda. Conta no prazo ou fora pela data em que o responsável concluiu."],
+    ["↩", "Devolver", "quem pediu", "Diz o que falta. Volta pendente para o mesmo responsável, que recebe e-mail na hora."],
+    ["💬", "Conversar", "todos os envolvidos", "Tirar dúvida sobre a solução antes de decidir."],
+    ["✉", "Lembrete", "automático", "Se ninguém confirmar, entra no resumo das 8h de quem pediu."]] },
+  ok: { c: "#18794e", t: "Concluída", s: "Fechada e contabilizada nos indicadores. Ainda dá para:", a: [
+    ["↺", "Reabrir", "quem pediu ou gerentes", "Com motivo. Volta a ser pendente com o mesmo responsável."],
+    ["🕘", "Ver o percurso", "todos que veem a demanda", "Quanto tempo ficou em cada setor e com cada pessoa."],
+    ["💬", "Consultar a conversa", "todos que veem a demanda", "Tudo fica guardado: mensagens, prints, motivos e a solução."]] },
+  cancel: { c: "#4b5565", t: "Cancelada", s: "Encerrada sem execução, com a justificativa registrada.", a: [
+    ["🕘", "Fica no histórico", "todos que viam a demanda", "Aparece nos filtros como cancelada e não conta como atraso."],
+    ["↺", "Abrir de novo", "quem pediu", "Se o pedido voltar, cadastra-se uma nova demanda."]] },
+};
+function openRemark(k) {
+  const r = REMARK[k], box = document.getElementById("remark");
+  document.querySelectorAll(".flow .hot").forEach((g) => g.classList.toggle("sel", g.dataset.node === k));
+  box.style.setProperty("--rc", r.c);
+  document.getElementById("remarkBody").innerHTML = `<h3>${r.t}</h3><div class="rsub">${r.s}</div>` + r.a.map(([i, b, who, txt]) => `<div class="ract"><span class="ri">${i}</span><b>${b}<small>${who}</small></b><span>${txt}</span></div>`).join("");
+  box.hidden = false;
+}
+function closeRemark() { document.getElementById("remark").hidden = true; document.querySelectorAll(".flow .hot").forEach((g) => g.classList.remove("sel")); }
+document.querySelectorAll(".flow .hot").forEach((g) => {
+  g.addEventListener("click", () => openRemark(g.dataset.node));
+  g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); openRemark(g.dataset.node); } });
+});
+document.querySelector("#remark .rx").onclick = closeRemark;
+document.querySelectorAll("[data-goto]").forEach((b) => (b.onclick = () => { closeRemark(); show(Number(b.dataset.goto) - 1); }));
+addEventListener("keydown", (e) => { if (e.key === "Escape") closeRemark(); });
 
-/* ===== avisos ===== */
-let audioCtx=null;
-function beep(){ if(!$('snd').checked) return; try{ audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
-  const t=audioCtx.currentTime; [660,880].forEach((f,i)=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.type='sine'; o.frequency.value=f;
-  g.gain.setValueAtTime(0,t+i*.09); g.gain.linearRampToValueAtTime(.08,t+i*.09+.01); g.gain.exponentialRampToValueAtTime(.0001,t+i*.09+.22); o.connect(g).connect(audioCtx.destination); o.start(t+i*.09); o.stop(t+i*.09+.25);}); }catch(_){} }
-function notify(to,text,ch){ if(!to) return; S.bell[to].unshift({t:text,h:S.h,read:false});
-  S.log.unshift({ch,to,text,h:S.h});
-  W.forEach((w,i)=>{ if(w.p===to){ const el=$('w'+i); if(!el.innerHTML) return; el.classList.add('ping'); setTimeout(()=>el.classList.remove('ping'),900); beep(); }}); }
+function fitShots(sl) {
+  sl.querySelectorAll(".shot").forEach((s) => {
+    const a = s.firstElementChild; a.style.transform = "none";
+    const k = Math.min(s.clientWidth / a.offsetWidth, s.clientHeight / a.offsetHeight, 1);
+    a.style.transform = `scale(${k})`;
+    a.style.left = Math.max(0, (s.clientWidth - a.offsetWidth * k) / 2) + "px";
+    a.style.top = Math.max(0, (s.clientHeight - a.offsetHeight * k) / 2) + "px";
+  });
+}
+function onShow(sl) { if (sl.querySelector(".shot")) fitShots(sl); if (!sl.querySelector("#remark")) closeRemarkSafe(); }
+function closeRemarkSafe() { const b = document.getElementById("remark"); if (b && !b.hidden) closeRemark(); }
 
-/* ===== regras (iguais às do painel) ===== */
-function create(by,title,ped,src,sec,who,days){
-  const id=++S.seq; who=who||GER[sec];
-  const d={id,code:`${P[by].s}-${String(id).padStart(3,'0')}`,title,ped,src,origin:P[by].s,creator:by,sec,who,due:dayOf(S.h)+days,st:'aberta',seenAt:null,
-    per:[{s:sec,a:S.h,b:null}],feed:[{k:'sys',h:S.h,txt:`${P[by].n} abriu a demanda`}],resBy:null,lateNotified:{}};
-  S.ds.push(d); S.focus=id;
-  if(who!==by) notify(who,`Demanda nova de ${first(P[by].n)}: ${title}`,'mail');
+function hbars(id, rows, color, unit = "") {
+  const max = Math.max(...rows.map((r) => r[1]));
+  document.getElementById(id).innerHTML = rows.map(([l, v, c]) => `<div class="hb"><span class="lab">${l}</span><span class="bar"><i style="width:${(v / max) * 100}%;background:${c || color}"></i></span><span class="val">${String(v).replace(".", ",")}${unit}</span></div>`).join("");
+}
+hbars("biBars", [["Obras", 3.4, "#db2777"], ["Manutenção", 2.6, "#7c3aed"], ["STC", 1.9, "#16a34a"], ["Faturamento", 1.4, "#0891b2"], ["Relacionamento", 1.1, "#2563eb"], ["Grandes Clientes", 0.8, "#ea580c"]], "#2c4ba6", " d");
+hbars("anLate", [["Carlos Melo", 14, ""], ["Beatriz Rocha", 9, ""], ["José Lima", 6, ""], ["Rui Alves", 4, ""], ["Maria Souza", 2, ""]], "#ea8a2e", " d");
+hbars("anSrc", [["Comitê de Clientes", 46, ""], ["Ouvidoria", 38, ""], ["ANEEL", 27, ""], ["Presidente", 19, ""], ["Reunião de diretoria", 12, ""]], "#2c4ba6");
+
+addEventListener("hashchange", fromHash); fromHash();
+
+/* ===================== demonstração ===================== */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const SEC = { REL: { n: "Relacionamento", c: "#2563eb" }, STC: { n: "STC", c: "#16a34a" }, OBR: { n: "Obras", c: "#db2777" } };
+const P = {
+  ana: { n: "Ana Costa", s: "REL", r: "Colaborador" }, paulo: { n: "Paulo Reis", s: "REL", r: "Gerente" },
+  jose: { n: "José Lima", s: "STC", r: "Colaborador" }, maria: { n: "Maria Souza", s: "STC", r: "Gerente" },
+  carlos: { n: "Carlos Melo", s: "OBR", r: "Gerente" }, bia: { n: "Beatriz Rocha", s: "OBR", r: "Colaborador" },
+};
+const GER = { REL: "paulo", STC: "maria", OBR: "carlos" };
+const BASE = new Date(2026, 11, 1);
+const WD = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+const dayOf = (h) => Math.floor(h / 24);
+const dObj = (d) => { const x = new Date(BASE); x.setDate(x.getDate() + d); return x; };
+const fdate = (d) => { const x = dObj(d); return `${String(x.getDate()).padStart(2, "0")}/${String(x.getMonth() + 1).padStart(2, "0")}/${x.getFullYear()}`; };
+const fdt = (h) => `${fdate(dayOf(h))} ${String(h % 24).padStart(2, "0")}:${String((h * 7) % 60).padStart(2, "0")}`;
+const clockTxt = (h) => { const x = dObj(dayOf(h)); return `${WD[x.getDay()]} ${String(x.getDate()).padStart(2, "0")}/${String(x.getMonth() + 1).padStart(2, "0")} · ${String(h % 24).padStart(2, "0")}h`; };
+const dur = (h) => { h = Math.max(0, Math.round(h)); const d = Math.floor(h / 24), r = h % 24; return d ? (r ? `${d}d ${r}h` : `${d}d`) : `${r}h 0min`; };
+const ini = (n) => { const p = n.split(" "); return (p[0][0] + p[p.length - 1][0]).toUpperCase(); };
+const first = (n) => n.split(" ")[0];
+const secChip = (s) => `<span class="sec" style="color:${SEC[s].c};border-color:${SEC[s].c}66;background:${SEC[s].c}14"><i style="background:${SEC[s].c}"></i>${SEC[s].n}</span>`;
+const av = (k, cls = "") => `<span class="avatar on ${cls}">${ini(P[k].n)}</span>`;
+const PRI = { normal: "Normal", alta: "↑ Alta", urgente: "↑ Urgente" };
+const ICON = {
+  home: '<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>',
+  track: '<svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>',
+  plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  chart: '<svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>',
+  sound: '<svg viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13"/></svg>',
+  check: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>',
+  fwd: '<svg viewBox="0 0 24 24"><path d="M15 5l6 6-6 6"/><path d="M21 11H9a6 6 0 00-6 6v2"/></svg>',
+  dots: '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>',
+  undo: '<svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 010 10h-3"/></svg>',
+  send: '<svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>',
+};
+
+let S, W;
+function seed() {
+  S = { h: 9, seq: 0, ds: [], log: [], att: {} };
+  W = [{ p: "ana", v: "inicio", cur: null, f: null, dr: {}, q: "pendentes" }, { p: "jose", v: "inicio", cur: null, f: null, dr: {}, q: "pendentes" }];
+  // demandas iniciais
+  S.h = 9 - 24 * 3; mk("carlos", "Levantamento de postes da Rua Piauí", "Levantar a situação dos postes citados na reclamação da ouvidoria e informar o prazo de reparo.", "Ouvidoria", "REL", "ana", 2, "normal", true);
+  S.h = 9 - 24 * 2; const c = mk("ana", "Atualizar slide de obras do comitê", "No slide de obras, trocar a coluna fora do prazo para dias corridos.", "Reunião com a diretoria", "OBR", "bia", 4, "normal", true);
+  S.h = 9 - 20; c.feed.push({ k: "msg", h: S.h, by: "bia", txt: "Ajustado. Mando a versão nova na conclusão." });
+  conclude("bia", c, "Slide atualizado com dias corridos e enviado no e-mail do comitê.", true);
+  S.h = 9; mk("ana", "Relatório de reclamações de faturamento", "Preciso do relatório de reclamações de faturamento de novembro, separado por base, para o comitê de quinta.", "Comitê de Clientes", "STC", "jose", 2, "alta");
+  S.log = []; S.h = 9;
+}
+const D = (id) => S.ds.find((d) => d.id === id);
+function mk(by, title, ped, src, sec, who, days, prio, seen) {
+  const id = ++S.seq; who = who || GER[sec];
+  const d = { id, code: `${P[by].s}-2026120${1 + Math.max(0, dayOf(S.h))}-${ini(P[by].n)}01-00${id}`, title, ped, src, origin: P[by].s, creator: by, sec, who, prio,
+    due: dayOf(S.h) + days, st: "aberta", seenAt: seen ? S.h : null, created: S.h, per: [{ s: sec, a: S.h, b: null }], feed: [], resBy: null, sol: null, flags: {} };
+  S.ds.push(d);
+  if (who !== by) notify(who, "now", `E-mail para ${P[who].n}: ${prio === "urgente" ? "[URGENTE] " : prio === "alta" ? "[ALTA] " : ""}Nova demanda: ${title}`);
+  if (prio === "urgente") notify(GER[sec], "now", `E-mail para ${P[GER[sec]].n}: [URGENTE] Nova demanda no seu setor: ${title}`);
   return d;
 }
-const canAct=(me,d)=>d.st==='aberta'&&(d.who===me||GER[d.sec]===me);
-function forward(me,d,sec,who,reason){
-  who=who||GER[sec];
-  const prev=d.who, prevSec=d.sec;
-  if(sec!==prevSec){ d.per[d.per.length-1].b=S.h; d.per.push({s:sec,a:S.h,b:null,late:dayOf(S.h)>d.due}); }
-  d.sec=sec; d.who=who; d.seenAt=null;
-  d.feed.push({k:'ev',c:'fwd',h:S.h,by:me,title:sec!==prevSec?`${first(P[me].n)} encaminhou para ${SEC[sec].n} · ${P[who].n}`:`${first(P[me].n)} repassou para ${P[who].n}`,txt:reason,lbl:'Motivo'});
-  if(who!==me) notify(who,`Demanda nova de ${first(P[me].n)}: ${d.title}`,'mail');
-  if(prev!==me&&prev!==who) notify(prev,`${d.title} saiu da sua fila`,'app');
+let actx = null;
+function beep() {
+  if (!$("snd").checked) return;
+  try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const t = actx.currentTime;
+    [523, 784].forEach((f, i) => { const o = actx.createOscillator(), g = actx.createGain(); o.type = "triangle"; o.frequency.value = f;
+      g.gain.setValueAtTime(0, t + i * .08); g.gain.linearRampToValueAtTime(.06, t + i * .08 + .01); g.gain.exponentialRampToValueAtTime(.0001, t + i * .08 + .25);
+      o.connect(g).connect(actx.destination); o.start(t + i * .08); o.stop(t + i * .08 + .3); }); } catch (_) { /* sem áudio */ }
 }
-function conclude(me,d,sol){
-  d.per[d.per.length-1].b=S.h; d.resBy=me; d.resAt=S.h; d.sol=sol;
-  const ontime=dayOf(S.h)<=d.due;
-  if(me===d.creator){ d.st='ok'; d.feed.push({k:'ev',c:'ok',h:S.h,by:me,title:`${first(P[me].n)} concluiu ${ontime?'no prazo':'fora do prazo'}`,txt:sol,lbl:'Solução'}); }
-  else { d.st='conf'; d.feed.push({k:'ev',c:'conf',h:S.h,by:me,title:`${first(P[me].n)} concluiu · aguardando confirmação`,txt:sol,lbl:'Solução'});
-    notify(d.creator,`Confirme a conclusão: ${d.title}`,'mail'); }
+function notify(to, kind, text) {
+  if (!to) return;
+  S.att[to] = (S.att[to] || 0) + 1;
+  S.log.unshift({ kind, text, h: S.h });
+  W.forEach((w, i) => { if (w.p === to) { const el = $("w" + i); if (!el.innerHTML) return; el.classList.add("ping"); setTimeout(() => el.classList.remove("ping"), 900); beep(); w.toast = "Chegou uma novidade para você."; } });
 }
-function confirmIt(me,d){ d.st='ok'; d.feed.push({k:'ev',c:'ok',h:S.h,by:me,title:`${first(P[me].n)} confirmou a conclusão`});
-  notify(d.resBy,`${first(P[me].n)} confirmou: ${d.title}`,'app'); }
-function sendBack(me,d,reason){ d.st='aberta'; d.who=d.resBy; d.sec=P[d.resBy].s; d.seenAt=null; d.per.push({s:d.sec,a:S.h,b:null,late:dayOf(S.h)>d.due});
-  d.feed.push({k:'ev',c:'back',h:S.h,by:me,title:`${first(P[me].n)} devolveu ao responsável`,txt:reason,lbl:'O que falta'});
-  notify(d.who,`Devolvida por ${first(P[me].n)}: ${d.title}`,'mail'); }
-function msg(me,d,txt){ d.feed.push({k:'msg',h:S.h,by:me,txt});
-  [d.creator,d.who].filter(x=>x!==me).forEach(x=>notify(x,`Mensagem de ${first(P[me].n)} em ${d.title}`,'app')); }
-function advance(){
-  S.h=(dayOf(S.h)+1)*24+8; const day=dayOf(S.h);
-  for(const d of S.ds){ if(d.st!=='aberta') continue;
-    const late=day-d.due;
-    if(late>0){ if(!d.lateNotified[day]){ d.lateNotified[day]=1; d.feed.push({k:'ev',c:'late',h:S.h,title:`Atrasada há ${late} dia(s)`,txt:`Está com ${P[d.who].n} (${SEC[d.sec].n}).`,lbl:'Situação'}); } }
+const isGer = (me, sec) => GER[sec] === me;
+const canWork = (me, d) => d.st === "aberta" && (d.who === me || isGer(me, d.sec));
+const visible = (me, d) => d.creator === me || d.who === me || d.feed.some((f) => f.by === me) || d.per.some((p) => isGer(me, p.s)) || isGer(me, d.origin);
+function forward(me, d, sec, who, reason) {
+  who = who || GER[sec];
+  const prev = d.who, prevSec = d.sec;
+  if (sec !== prevSec) { d.per[d.per.length - 1].b = S.h; d.per.push({ s: sec, a: S.h, b: null, late: dayOf(S.h) > d.due }); }
+  d.sec = sec; d.who = who; d.seenAt = null;
+  d.feed.push({ k: "ev", c: "fwd", h: S.h, by: me, title: sec !== prevSec ? `encaminhou para ${SEC[sec].n} · ${P[who].n}` : `repassou para ${P[who].n}`, txt: reason, lbl: "Motivo" });
+  if (who !== me) notify(who, "now", `E-mail para ${P[who].n}: Nova demanda: ${d.title} (encaminhada por ${first(P[me].n)})`);
+}
+function conclude(me, d, sol, quiet) {
+  d.per[d.per.length - 1].b = S.h; d.resBy = me; d.sol = sol; d.resAt = S.h;
+  const onTime = dayOf(S.h) <= d.due;
+  if (me === d.creator) { d.st = "ok"; d.feed.push({ k: "ev", c: "ok", h: S.h, by: me, title: `concluiu ${onTime ? "no prazo" : "fora do prazo"}`, txt: sol, lbl: "Solução" }); }
+  else { d.st = "conf"; d.feed.push({ k: "ev", c: "conf", h: S.h, by: me, title: "concluiu · aguardando confirmação", txt: sol, lbl: "Solução" });
+    if (!quiet) notify(d.creator, "now", `E-mail para ${P[d.creator].n}: Confirme a conclusão: ${d.title}`); else S.att[d.creator] = (S.att[d.creator] || 0) + 1; }
+}
+function confirmIt(me, d) { d.st = "ok"; d.feed.push({ k: "ev", c: "ok", h: S.h, by: me, title: "confirmou a conclusão" }); }
+function sendBack(me, d, reason) {
+  d.st = "aberta"; d.who = d.resBy; d.sec = P[d.resBy].s; d.seenAt = null; d.per.push({ s: d.sec, a: S.h, b: null, late: dayOf(S.h) > d.due });
+  d.feed.push({ k: "ev", c: "back", h: S.h, by: me, title: "devolveu ao responsável", txt: reason, lbl: "O que falta" });
+  notify(d.who, "now", `E-mail para ${P[d.who].n}: Devolvida para você: ${d.title}`);
+}
+function changeDue(me, d, days, why) { const old = d.due; d.due = dayOf(S.h) + days; d.feed.push({ k: "ev", c: "due", h: S.h, by: me, title: `alterou o prazo: ${fdate(old)} → ${fdate(d.due)}`, txt: why, lbl: "Justificativa" }); }
+function cancelIt(me, d, why) { d.per[d.per.length - 1].b = d.per[d.per.length - 1].b ?? S.h; d.st = "cancel"; d.feed.push({ k: "ev", c: "cancel", h: S.h, by: me, title: "cancelou a demanda", txt: why, lbl: "Justificativa" }); }
+function msg(me, d, txt) { d.feed.push({ k: "msg", h: S.h, by: me, txt }); [d.creator, d.who].filter((x) => x !== me).forEach((x) => { S.att[x] = (S.att[x] || 0) + 1; S.log.unshift({ kind: "app", text: `No painel para ${P[x].n}: mensagem de ${first(P[me].n)} em ${d.title}`, h: S.h }); }); }
+function tickRules() {
+  for (const d of S.ds) {
+    if (d.st !== "aberta") continue;
+    const per = d.per[d.per.length - 1];
+    if (d.prio !== "normal" && d.seenAt == null && !d.flags["l" + per.a] && S.h - per.a >= (d.prio === "urgente" ? 2 : 4)) {
+      d.flags["l" + per.a] = 1;
+      notify(d.who, "now", `E-mail para ${P[d.who].n}: ${d.prio === "urgente" ? "[URGENTE]" : "[ALTA]"} Ainda não aberta: ${d.title}`);
+    }
   }
-  // resumo das 8h, um por pessoa com algo pendente
-  for(const k of Object.keys(P)){
-    const mine=S.ds.filter(d=>d.st==='aberta'&&d.who===k), conf=S.ds.filter(d=>d.st==='conf'&&d.creator===k);
-    const late=mine.filter(d=>day>d.due).length, soon=mine.filter(d=>d.due-day>=0&&d.due-day<=1).length;
-    const sectorLate=P[k].r==='Gerente'?S.ds.filter(d=>d.st==='aberta'&&d.sec===P[k].s&&d.who!==k&&day>d.due).length:0;
-    if(!mine.length&&!conf.length&&!sectorLate) continue;
-    const parts=[]; if(late) parts.push(`${late} atrasada(s)`); if(soon) parts.push(`${soon} vence(m) hoje/amanhã`); if(conf.length) parts.push(`${conf.length} para confirmar`);
-    if(mine.length-late-soon>0) parts.push(`${mine.length-late-soon} no prazo`); if(sectorLate) parts.push(`setor: ${sectorLate} atrasada(s) com a equipe`);
-    S.bell[k].unshift({t:`Resumo do dia: ${parts.join(', ')}`,h:S.h,read:false});
-    S.log.unshift({ch:'dig',to:k,text:`Resumo das 8h: ${parts.join(', ')}`,h:S.h});
+}
+function advance() {
+  S.h = (dayOf(S.h) + 1) * 24 + 8;
+  const day = dayOf(S.h);
+  for (const d of S.ds) {
+    if (d.st !== "aberta" || day <= d.due || d.flags["atr" + d.due]) continue;
+    d.flags["atr" + d.due] = 1;
+    d.feed.push({ k: "ev", c: "late", h: S.h, title: `Venceu sem conclusão`, txt: `Está com ${P[d.who].n} (${SEC[d.sec].n}).`, lbl: "Situação" });
+    notify(d.who, "late", `E-mail para ${P[d.who].n}: Atrasada: ${d.title}`);
+    if (GER[d.sec] !== d.who) notify(GER[d.sec], "late", `E-mail para ${P[GER[d.sec]].n}: Atrasada na sua equipe: ${d.title} (com ${first(P[d.who].n)})`);
   }
-  W.forEach((w,i)=>{ if(S.bell[w.p].some(b=>!b.read)){ const el=$('w'+i); el.classList.add('ping'); setTimeout(()=>el.classList.remove('ping'),900);} });
-  beep(); renderAll();
-}
-const step=()=>{ S.h+=2; };
-
-/* ===== janelas ===== */
-const involved=(me,d)=>d.creator===me||d.who===me||GER[d.sec]===me||d.feed.some(f=>f.by===me)||d.per.some(p=>GER[p.s]===me&&p.s===P[me].s);
-function dueTag(d){ if(d.st!=='aberta') return `<span class="due">${dLabel(d.due)}</span>`; const x=d.due-dayOf(S.h);
-  return x<0?`<span class="due l">atrasada ${-x}d</span>`:x===0?`<span class="due w">vence hoje</span>`:x===1?`<span class="due w">vence amanhã</span>`:`<span class="due">${dLabel(d.due)}</span>`; }
-const stTag=d=>d.st==='aberta'?'<span class="tag st-aberta">Pendente</span>':d.st==='conf'?'<span class="tag st-conf">Aguardando confirmação</span>':'<span class="tag st-ok">Concluída</span>';
-const BELL='<svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
-
-function rowHtml(me,d){ const mk=d.who===me&&d.st==='aberta'&&!d.seenAt?'<span class="mk">Nova</span>':d.creator===me&&d.st==='conf'?'<span class="mk c">Confirmar</span>':'';
-  return `<button class="row" type="button" data-open="${d.id}"><span class="t">${esc(d.title)}</span>${dueTag(d)}<span class="m">${mk}${stTag(d)}${secChip(d.sec)}<span>com ${esc(first(P[d.who].n))}</span></span></button>`; }
-
-function renderWin(i){
-  const w=W[i], me=w.p, el=$('w'+i), unread=S.bell[me].filter(b=>!b.read).length;
-  let body='';
-  if(w.bellOpen){ body+=`<div class="bellp">${S.bell[me].slice(0,6).map(b=>`<div>${esc(b.t)}<br><small>${hLabel(b.h)}</small></div>`).join('')||'<div>Nada novo.</div>'}</div>`; }
-  if(w.v==='list'){
-    const mine=S.ds.filter(d=>(d.who===me&&d.st==='aberta')||(d.creator===me&&d.st==='conf'));
-    const rest=S.ds.filter(d=>!mine.includes(d)&&involved(me,d));
-    body+=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="color:#1f2a5c">Início</b><button class="btn sm pri" type="button" data-new>+ Nova demanda</button></div>
-      <h4>Precisa de você (${mine.length})</h4>${mine.length?mine.map(d=>rowHtml(me,d)).join(''):'<div class="empty">Nada pendente com você.</div>'}
-      <h4 style="margin-top:12px">Acompanhando (${rest.length})</h4>${rest.length?rest.map(d=>rowHtml(me,d)).join(''):'<div class="empty">Nenhuma outra demanda.</div>'}`;
-  } else if(w.v==='new'){
-    const dr=w.dr; const sec=dr.sec||'STC';
-    const ppl=Object.entries(P).filter(([,p])=>p.s===sec);
-    body+=`<button class="back" type="button" data-back>‹ Início</button><div class="task nf">
-      <b style="color:#1f2a5c">Nova demanda</b>
-      <label>Demanda<input data-d="title" value="${esc(dr.title??'Levantamento de postes da Rua Piauí')}"></label>
-      <label>Pedido<textarea data-d="ped">${esc(dr.ped??'Levantar a situação dos postes citados na reclamação da ouvidoria e informar prazo de reparo.')}</textarea></label>
-      <label>Pedido feito em / por<input data-d="src" value="${esc(dr.src??'Ouvidoria')}"></label>
-      <div class="two"><label>Setor responsável<select data-d="sec">${Object.entries(SEC).map(([k,s])=>`<option value="${k}" ${k===sec?'selected':''}>${s.n}</option>`).join('')}</select></label>
-      <label>Responsável<select data-d="who"><option value="">Gerente do setor (${esc(P[GER[sec]].n)})</option>${ppl.map(([k,p])=>`<option value="${k}" ${dr.who===k?'selected':''}>${esc(p.n)}</option>`).join('')}</select></label></div>
-      <label>Prazo<select data-d="days">${[1,2,3,5].map(n=>`<option value="${n}" ${String(dr.days??2)==String(n)?'selected':''}>${n} dia(s) · ${dLabel(dayOf(S.h)+n)}</option>`).join('')}</select></label>
-      <div style="font-size:12px;color:var(--mt)">Setor que abriu: ${secChip(P[me].s)}</div>
-      <button class="btn pri" type="button" data-save>Salvar demanda</button></div>`;
-  } else {
-    const d=D(w.cur);
-    const late=d.st==='aberta'&&dayOf(S.h)>d.due;
-    const cur=d.per[d.per.length-1];
-    const seen=d.seenAt!=null?`<span class="seen on" title="Vista ${hLabel(d.seenAt)}">✓✓ vista</span>`:'<span class="seen">✓ não vista</span>';
-    let acts='';
-    if(canAct(me,d)) acts+=`<button class="btn ok" type="button" data-f="concluir">Concluir</button><button class="btn" type="button" data-f="encaminhar" style="border-color:#283672;color:#283672">Encaminhar</button>`;
-    if(d.st==='conf'&&d.creator===me) acts+=`<button class="btn ok" type="button" data-confirm>Confirmar conclusão</button><button class="btn" type="button" data-f="devolver">Devolver</button>`;
-    let form='';
-    if(w.f==='concluir') form=`<div class="inl"><textarea data-d="sol" placeholder="Como foi resolvido?">${esc(w.dr.sol??'Relatório anexado na conversa, separado por base.')}</textarea><div><button class="btn sm ok" type="button" data-do="concluir">Concluir</button> <button class="btn sm" type="button" data-cancel>Cancelar</button></div>${d.creator!==me?`<small style="color:var(--mt)">${esc(P[d.creator].n)} criou a demanda e vai confirmar.</small>`:''}</div>`;
-    if(w.f==='encaminhar'){ const fs=w.dr.fsec||(d.sec==='OBR'?'STC':'OBR'); const ppl=Object.entries(P).filter(([k,p])=>p.s===fs&&!(k===d.who&&fs===d.sec));
-      form=`<div class="inl"><select data-d="fsec">${Object.entries(SEC).map(([k,s])=>`<option value="${k}" ${k===fs?'selected':''}>${s.n}</option>`).join('')}</select>
-        <select data-d="fwho"><option value="">Gerente do setor (${esc(P[GER[fs]].n)})</option>${ppl.map(([k,p])=>`<option value="${k}" ${w.dr.fwho===k?'selected':''}>${esc(p.n)}</option>`).join('')}</select>
-        <textarea data-d="reason" placeholder="Motivo">${esc(w.dr.reason??'Depende de levantamento de campo da equipe de obras.')}</textarea>
-        <div><button class="btn sm pri" type="button" data-do="encaminhar">Encaminhar</button> <button class="btn sm" type="button" data-cancel>Cancelar</button></div><small style="color:var(--mt)">O prazo continua ${dLabel(d.due)}.</small></div>`; }
-    if(w.f==='devolver') form=`<div class="inl"><textarea data-d="back" placeholder="O que ainda falta?">${esc(w.dr.back??'Faltou separar as reclamações por tipo.')}</textarea><div><button class="btn sm pri" type="button" data-do="devolver">Devolver</button> <button class="btn sm" type="button" data-cancel>Cancelar</button></div></div>`;
-    const feed=d.feed.map(f=>f.k==='msg'?`<div class="bub ${f.by===me?'me':''}"><div><small>${f.by===me?'Você':esc(P[f.by].n)} · ${hLabel(f.h)}</small><br>${esc(f.txt)}</div></div>`
-      :f.k==='sys'?`<div style="text-align:center;font-size:11px;color:var(--mt);margin-bottom:7px">${esc(f.txt)} · ${hLabel(f.h)}</div>`
-      :`<div class="ev ${f.c}"><small>${hLabel(f.h)}</small><b>${esc(f.title)}</b>${f.txt?`<span><span style="color:var(--mt)">${f.lbl}:</span> ${esc(f.txt)}</span>`:''}</div>`).join('');
-    body+=`<button class="back" type="button" data-back>‹ Início</button><div class="task">
-      <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">${stTag(d)}${late?'<span class="tag" style="background:#fde2e2;color:var(--late)">Fora do prazo</span>':''}<span style="font-size:11px;color:var(--mt);font-family:Consolas,monospace">${d.code}</span></div>
-      <h5>${esc(d.title)}</h5>
-      <div class="ped"><small>Pedido</small>${esc(d.ped)}</div>
-      <div class="meta"><span>Prazo <b>${dLabel(d.due)}</b> ${d.st==='aberta'&&d.due-dayOf(S.h)<=1?dueTag(d):''}</span><span>Pedido por <b>${esc(d.src||'—')}</b></span>
-        <span>${secChip(d.origin)} → ${secChip(d.sec)}</span><span>Com <b>${esc(P[d.who].n)}</b> ${seen}</span>
-        <span>Tempo neste setor <b>${dur((cur.b??S.h)-cur.a)}</b></span></div>
-      ${acts?`<div class="acts">${acts}</div>`:''}${form}</div>
-      <div class="feed">${feed}</div>`;
+  const wd = dObj(day).getDay();
+  if (wd !== 0 && wd !== 6) for (const k of Object.keys(P)) {
+    const mine = S.ds.filter((d) => d.st === "aberta" && d.who === k), conf = S.ds.filter((d) => d.st === "conf" && d.creator === k);
+    const late = mine.filter((d) => day > d.due).length, soon = mine.filter((d) => d.due - day >= 0 && d.due - day <= 1).length;
+    if (!late && !soon && !conf.length) continue;
+    const parts = []; if (late) parts.push(`${late} atrasada(s)`); if (soon) parts.push(`${soon} vence(m) hoje/amanhã`); if (conf.length) parts.push(`${conf.length} para confirmar`);
+    S.log.unshift({ kind: "dig", text: `Resumo das 8h para ${P[k].n}: ${parts.join(" · ")}`, h: S.h });
   }
-  el.innerHTML=`<div class="wbar"><span class="dots"><i></i><i></i><i></i></span>
-      <select data-who aria-label="Ver como">${Object.entries(P).map(([k,p])=>`<option value="${k}" ${k===me?'selected':''}>${p.n} · ${SEC[p.s].n}</option>`).join('')}</select>
-      <span class="role">${P[me].r}</span><span class="sp"></span>
-      <button class="bell" type="button" data-bell aria-label="Avisos">${BELL}${unread?`<b>${unread}</b>`:''}</button></div>
-    <div class="wbody">${body}</div>
-    ${w.v==='det'?`<div class="comp"><input data-d="msg" placeholder="Escreva uma mensagem…" value="${esc(w.dr.msg??'')}"><button class="btn sm pri" type="button" data-send>Enviar</button></div>`:''}`;
-  const wb=el.querySelector('.wbody'); if(w.v==='det'&&w.scroll){ wb.scrollTop=wb.scrollHeight; w.scroll=false; }
+  tickRules(); renderAll();
 }
+const step = () => { S.h += 1; tickRules(); };
 
-function renderAll(){
-  $('clk').textContent=hLabel(S.h);
-  W.forEach((_,i)=>renderWin(i));
-  // percurso
-  const d=D(S.focus)||S.ds[S.ds.length-1];
-  if(d){ const end=p=>p.b??(d.st==='aberta'?S.h:p.a); const tot=d.per.reduce((a,p)=>a+(end(p)-p.a),0)||1;
-    $('rtS').textContent=`${d.title} · ${d.st==='aberta'?'em andamento':'relógio parado na conclusão'}`;
-    const sums={}; d.per.forEach(p=>sums[p.s]=(sums[p.s]||0)+(end(p)-p.a));
-    $('rt').innerHTML=`<div class="route">${d.per.map(p=>{const h=end(p)-p.a;return `<span style="flex:${Math.max(h,.0001)} 1 0;background:${SEC[p.s].c}" title="${SEC[p.s].n}: ${dur(h)}${p.late?' · chegou vencida':''}">${h/tot>.14?SEC[p.s].n:''}</span>`;}).join('')}</div>
-      <div class="rt">${Object.entries(sums).map(([s,h])=>`${secChip(s)}<span style="color:var(--mt);font-size:12px">${d.per.filter(p=>p.s===s).length} passagem(ns)${d.per.some(p=>p.s===s&&p.late)?' · chegou vencida':''}</span><span class="v">${dur(h)}</span>`).join('')}</div>`; }
-  $('nlog').innerHTML=S.log.length?S.log.slice(0,14).map(l=>`<div><span class="ch ${l.ch==='mail'?'mail':l.ch==='dig'?'dig':'app'}">${l.ch==='mail'?'E-mail':l.ch==='dig'?'Resumo 8h':'Sino'}</span><span><b>${esc(P[l.to].n)}</b>: ${esc(l.text)} <span style="color:var(--mt);font-size:11.5px">· ${hLabel(l.h)}</span></span></div>`).join(''):'<span style="color:var(--mt)">Nenhum aviso ainda.</span>';
+/* -------- telas -------- */
+function stTag(d) { return d.st === "aberta" ? '<span class="tag st-aberta">⧗ Pendente</span>' : d.st === "conf" ? '<span class="tag st-conf">⚑ Aguardando confirmação</span>' : d.st === "ok" ? '<span class="tag st-ok">✓ Concluída</span>' : '<span class="tag st-cancel">✕ Cancelada</span>'; }
+const prTag = (d) => `<span class="tag pr-${d.prio}">${PRI[d.prio]}</span>`;
+function dl(d) {
+  if (d.st !== "aberta") return "";
+  const x = d.due - dayOf(S.h);
+  if (x < 0) return `<span class="dl dl-red">Vencida há ${-x} dia${x === -1 ? "" : "s"}</span>`;
+  if (x === 0) return '<span class="dl dl-orange">Vence hoje</span>'; if (x === 1) return '<span class="dl dl-orange">Vence amanhã</span>';
+  return `<span class="dl ${x <= 3 ? "dl-yellow" : "dl-neutral"}">Vence em ${x} dias</span>`;
 }
-
-/* ===== eventos das janelas ===== */
-[0,1].forEach(i=>{
-  const el=$('w'+i);
-  el.addEventListener('input',e=>{const k=e.target.dataset.d; if(k) W[i].dr[k]=e.target.value;});
-  el.addEventListener('change',e=>{
-    const w=W[i];
-    if(e.target.dataset.who!==undefined){ w.p=e.target.value; w.v='list'; w.f=null; w.dr={}; w.bellOpen=false; renderAll(); return; }
-    const k=e.target.dataset.d; if(!k) return; w.dr[k]=e.target.value;
-    if(k==='sec'){ delete w.dr.who; renderAll(); } if(k==='fsec'){ delete w.dr.fwho; renderAll(); }
+function dueCell(d) {
+  const x = d.due - dayOf(S.h);
+  if (d.st !== "aberta" || x > 1) return `<span class="due">${fdate(d.due)}</span>`;
+  return `<span class="due ${x < 0 ? "due-red" : "due-orange"}">${fdate(d.due)}<small>${x < 0 ? `Vencida há ${-x} dia${x === -1 ? "" : "s"}` : x === 0 ? "Vence hoje" : "Vence amanhã"}</small></span>`;
+}
+function conclTag(d) { if (!d.resAt || d.st === "aberta" || d.st === "cancel") return '<span style="color:#6b7383">—</span>'; return dayOf(d.resAt) <= d.due ? '<span class="tag cc-ok">✓ No prazo</span>' : '<span class="tag cc-late">✕ Fora do prazo</span>'; }
+function row(me, d, compact) {
+  const mark = d.who === me && d.st === "aberta" && d.seenAt == null ? '<span class="mk">Nova</span>' : "";
+  const seen = d.seenAt != null ? '<span class="seen on">✓✓</span>' : '<span class="seen">✓</span>';
+  return `<tr data-open="${d.id}"><td><div class="t">${esc(d.title)}${mark}</div><div class="pv">${esc(d.ped)}</div></td>
+    <td><span class="tag" style="background:#eef2fb;color:#3b4a7a;font-weight:500">${esc(d.src)}</span></td>
+    ${compact ? "" : `<td>${prTag(d)}</td>`}<td>${stTag(d)}</td>${compact ? "" : `<td>${conclTag(d)}</td>`}
+    <td><span class="person">${av(d.who)}${esc(P[d.who].n)}</span> ${seen}</td><td>${dueCell(d)}</td></tr>`;
+}
+function table(me, list, compact) {
+  return `<div class="apanel" style="overflow-x:auto"><table class="dt"><thead><tr><th>Título</th><th>Pedido feito em / por</th>${compact ? "" : "<th>Prioridade</th>"}<th>Status</th>${compact ? "" : "<th>Conclusão</th>"}<th>Responsável</th><th>Prazo</th></tr></thead><tbody>${list.map((d) => row(me, d, compact)).join("")}</tbody></table></div>`;
+}
+function viewInicio(me) {
+  const vis = S.ds.filter((d) => visible(me, d)), day = dayOf(S.h);
+  const n = { p: vis.filter((d) => d.st === "aberta").length, l: vis.filter((d) => d.st === "aberta" && d.due < day).length, c: vis.filter((d) => d.st === "conf").length, o: vis.filter((d) => d.st === "ok").length };
+  const mine = S.ds.filter((d) => d.who === me && d.st === "aberta").sort((a, b) => a.due - b.due);
+  const conf = S.ds.filter((d) => d.creator === me && d.st === "conf");
+  const scope = P[me].r === "Gerente" ? "Demandas do seu setor e as que você participa" : "Demandas em que você participa";
+  return `<div class="a-head"><h1>Início</h1><button class="abtn pri lg" data-go="cadastro">${ICON.plus}Nova demanda</button></div>
+    <div class="sh" style="margin-top:4px"><h2>Resumo</h2><span style="font-size:13px;color:#6b7383">${scope}</span></div>
+    <div class="stats"><div class="stat s-open" data-q="pendentes"><span class="ic">⧗</span><span class="n">${n.p}</span><span class="l">Pendentes</span></div>
+      <div class="stat s-late" data-q="vencidas"><span class="ic">⚑</span><span class="n">${n.l}</span><span class="l">Fora do prazo</span></div>
+      <div class="stat s-conf" data-q="confirmar"><span class="ic">✓✓</span><span class="n">${n.c}</span><span class="l">Aguardando confirmação</span></div>
+      <div class="stat s-done" data-q="concluidas"><span class="ic">✓</span><span class="n">${n.o}</span><span class="l">Concluídas</span></div></div>
+    ${conf.length ? `<div class="sh"><h2>⚑ Precisa da sua confirmação</h2><span class="cpill w">${conf.length}</span></div>${table(me, conf, true)}` : ""}
+    <div class="sh"><h2>Suas pendências</h2><span class="cpill">${mine.length}</span></div>
+    ${mine.length ? table(me, mine, true) : '<div class="apanel empty">Nada pendente com você.</div>'}`;
+}
+const QF = [["pendentes", "Pendentes", (d) => d.st === "aberta"], ["vencidas", "Fora do prazo", (d) => d.st === "aberta" && d.due < dayOf(S.h)], ["confirmar", "Aguardando confirmação", (d) => d.st === "conf"], ["concluidas", "Concluídas", (d) => d.st === "ok"], ["todas", "Todas", () => true]];
+function viewAcomp(me, w) {
+  const vis = S.ds.filter((d) => visible(me, d));
+  const f = QF.find((x) => x[0] === w.q) || QF[0];
+  const list = vis.filter(f[2]).sort((a, b) => a.due - b.due);
+  return `<div class="a-head"><h1>Acompanhamento</h1><input style="width:230px" placeholder="Pesquisar demanda…" disabled><button class="abtn pri" data-go="cadastro">${ICON.plus}Nova demanda</button></div>
+    <div class="chips">${QF.map((q) => `<button class="qf ${q[0] === w.q ? "on" : ""}" data-qf="${q[0]}">${q[1]}<span class="n">${vis.filter(q[2]).length}</span></button>`).join("")}</div>
+    ${list.length ? table(me, list, false) : '<div class="apanel empty">Nenhuma demanda aqui.</div>'}`;
+}
+function viewCadastro(me, w) {
+  const dr = w.dr, sec = dr.sec || (P[me].s === "STC" ? "OBR" : "STC");
+  const ppl = Object.entries(P).filter(([, p]) => p.s === sec);
+  return `<div class="a-head"><h1>Cadastro</h1></div><div class="apanel" style="padding:20px 22px"><div class="fgrid">
+    <label class="f s3"><span>Demanda <b class="req">*</b></span><input data-d="title" value="${esc(dr.title ?? "Levantamento de postes da Rua Piauí")}"></label>
+    <label class="f"><span>Prazo <b class="req">*</b></span><select data-d="days">${[1, 2, 3, 5, 7].map((n) => `<option value="${n}" ${String(dr.days ?? 3) === String(n) ? "selected" : ""}>${fdate(dayOf(S.h) + n)}</option>`).join("")}</select></label>
+    <label class="f s2"><span>Pedido feito em / por</span><input data-d="src" value="${esc(dr.src ?? "Ouvidoria")}"><div class="hint">Onde ou por quem a demanda surgiu. Não é o setor.</div></label>
+    <label class="f"><span>Setor responsável <b class="req">*</b></span><select data-d="sec">${Object.entries(SEC).map(([k, s]) => `<option value="${k}" ${k === sec ? "selected" : ""}>${s.n}</option>`).join("")}</select></label>
+    <label class="f"><span>Responsável <b class="req">*</b></span><select data-d="who"><option value="">Gerente do setor (${esc(P[GER[sec]].n)})</option>${ppl.map(([k, p]) => `<option value="${k}" ${dr.who === k ? "selected" : ""}>${esc(p.n)}</option>`).join("")}</select></label>
+    <label class="f"><span>Prioridade</span><select data-d="prio">${["normal", "alta", "urgente"].map((p) => `<option value="${p}" ${(dr.prio || "normal") === p ? "selected" : ""}>${{ normal: "Normal", alta: "Alta", urgente: "Urgente" }[p]}</option>`).join("")}</select></label>
+    <div class="f s4"><span>Descrição <b class="req">*</b></span><div class="editor"><textarea data-d="ped" rows="3">${esc(dr.ped ?? "Levantar a situação dos postes citados na reclamação da ouvidoria e informar o prazo de reparo.")}</textarea><div class="tools"><span>▣ Imagem</span><span>▦ Tabela</span><span><b>B</b></span><span><i>I</i></span><span>• Lista</span><span>1. Lista</span><span>Link</span></div></div></div>
+  </div><div class="form-foot"><span class="origin">Setor que abriu: ${secChip(P[me].s)} <span style="color:#6b7383;font-size:13px">· Criada por ${esc(P[me].n)}</span></span><span style="flex:1"></span><button class="abtn pri lg" data-save>${ICON.check}Salvar demanda</button></div></div>`;
+}
+function viewDetalhe(me, w) {
+  const d = D(w.cur);
+  if (!d || !visible(me, d)) return '<div class="apanel empty">Você não tem mais acesso a esta demanda.</div>';
+  const late = d.st === "aberta" && dayOf(S.h) > d.due, cp = d.per[d.per.length - 1];
+  let acts = "";
+  if (d.st === "conf" && d.creator === me) acts += `<button class="abtn ok lg" data-act="confirm">${ICON.check}Confirmar conclusão</button><button class="abtn out" data-f="devolver">${ICON.undo}Devolver</button>`;
+  if (canWork(me, d)) acts += `<button class="abtn ok lg" data-f="concluir">${ICON.check}Concluir</button><button class="abtn out lg" data-f="encaminhar">${ICON.fwd}Encaminhar</button>`;
+  const more = d.st === "aberta" && (d.creator === me || isGer(me, d.sec));
+  acts += `<span style="position:relative"><button class="abtn ghost" data-menu>${ICON.dots} Mais ▾</button>${w.menu ? `<div class="menu">${more ? '<button data-f="prazo">Alterar prazo</button>' : ""}<button data-f="percurso">Ver percurso nos setores</button>${d.st === "aberta" && (d.creator === me || isGer(me, d.sec)) ? '<button class="danger" data-f="cancelar">Cancelar demanda</button>' : ""}</div>` : ""}</span>`;
+  const seen = d.seenAt != null ? '<span class="seen on">✓✓ vista</span>' : '<span class="seen">✓ não vista</span>';
+  const notice = d.st === "conf" ? `<div class="notice">⚑ ${d.creator === me ? `${esc(P[d.resBy].n)} concluiu esta demanda. Confira a solução e confirme, ou devolva se faltar algo.` : `Concluída por ${esc(P[d.resBy].n)}. Aguardando ${esc(P[d.creator].n)} confirmar.`}</div>` : "";
+  const feed = d.feed.map((f) => f.k === "msg" ? `<div class="bubble ${f.by === me ? "mine" : ""}">${f.by === me ? "" : av(f.by)}<div class="bb"><div class="who">${f.by === me ? "Você" : esc(P[f.by].n)}<span class="when">${fdt(f.h)}</span></div>${esc(f.txt)}</div></div>`
+    : `<div class="evmsg ev-${f.c}"><div class="when">${fdt(f.h)}</div><div class="et">${f.by ? (f.by === me ? "Você " : esc(P[f.by].n) + " ") : ""}${esc(f.title)}</div>${f.txt ? `<div class="ex"><span>${f.lbl}:</span> ${esc(f.txt)}</div>` : ""}</div>`).join("");
+  const people = [...new Set([d.creator, d.who])];
+  return `<button class="back" data-go="acompanhamento">‹ Acompanhamento</button><div class="taskview"><div>
+    <div class="apanel task-card"><div class="task-head"><div class="m"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${stTag(d)}${prTag(d)}${d.st === "ok" || d.st === "conf" ? conclTag(d) : ""}<span class="code">${d.code}</span></div>
+      <div class="task-title">${esc(d.title)}</div></div><div class="task-actions">${acts}</div></div>
+      ${notice}${d.sol && d.st !== "aberta" ? `<div class="resolution"><b>Solução:</b> ${esc(d.sol)}</div>` : ""}
+      <div class="pedido"><div class="pl">Pedido</div><div class="pb">${esc(d.ped)}</div></div>
+      <div class="metastrip"><span class="mi"><span class="k">Prazo</span>${fdate(d.due)} ${dl(d)}</span><span class="mi"><span class="k">Pedido feito em / por</span>${esc(d.src)}</span>
+        <span class="mi"><span class="k">Setor</span>${secChip(d.origin)} → ${secChip(d.sec)}</span><span class="mi"><span class="k">Responsável</span><span class="person">${av(d.who)}${esc(P[d.who].n)}</span> ${seen}</span>
+        <span class="mi"><span class="k">Criada por</span>${esc(P[d.creator].n)} <span style="color:#6b7383">· ${fdt(d.created)}</span></span>
+        <span class="mi"><span class="k">Tempo no setor</span>${d.st === "aberta" ? `${SEC[cp.s].n}: ${dur(S.h - cp.a)}` : "Encerrado"} · <u style="color:#2c4ba6">percurso</u></span></div></div></div>
+    <div class="apanel chatcol"><div class="chat-head"><h2>Conversa</h2>${people.map((k) => av(k)).join("")}</div>
+      <div class="chat-msgs"><div class="sysmsg">${esc(P[d.creator].n)} abriu a demanda em ${fdt(d.created)}</div>${feed || '<div class="empty" style="font-size:13px">Nenhuma mensagem ainda.</div>'}</div>
+      <div class="compose"><div class="editor"><textarea data-d="msg" placeholder="Escreva uma mensagem…">${esc(w.dr.msg || "")}</textarea><div class="tools"><span>▣ Imagem</span><span>▦ Tabela</span><span><b>B</b></span><span><i>I</i></span><span>Link</span></div></div>
+      <div class="foot"><button class="abtn pri" data-send>${ICON.send}Enviar</button></div></div></div></div>`;
+}
+function modal(me, w) {
+  const d = D(w.cur);
+  if (!w.f || !d || ["concluir", "encaminhar", "devolver", "prazo", "cancelar", "percurso"].indexOf(w.f) < 0) return "";
+  let title = "", body = "", ok = "";
+  if (w.f === "concluir") { title = "Concluir demanda"; body = `${d.creator !== me ? `<div class="notice" style="background:#e9eefa;color:#1f2a5c;margin:0">⚑ ${esc(P[d.creator].n)} criou esta demanda e vai confirmar a conclusão.</div>` : ""}<label class="f"><span>Solução <b class="req">*</b></span><textarea class="in" rows="3" data-d="sol">${esc(w.dr.sol ?? "Relatório anexado na conversa, separado por base.")}</textarea></label>`; ok = '<button class="abtn ok" data-do="concluir">Concluir</button>'; }
+  if (w.f === "encaminhar") { const fs = w.dr.fsec || (d.sec === "OBR" ? "STC" : "OBR"); const ppl = Object.entries(P).filter(([k, p]) => p.s === fs && !(k === d.who && fs === d.sec));
+    title = "Encaminhar demanda"; body = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><label class="f"><span>Para o setor *</span><select data-d="fsec">${Object.entries(SEC).map(([k, s]) => `<option value="${k}" ${k === fs ? "selected" : ""}>${s.n}</option>`).join("")}</select></label>
+      <label class="f"><span>Para a pessoa *</span><select data-d="fwho"><option value="">Gerente do setor (${esc(P[GER[fs]].n)})</option>${ppl.map(([k, p]) => `<option value="${k}" ${w.dr.fwho === k ? "selected" : ""}>${esc(p.n)}</option>`).join("")}</select></label></div>
+      <label class="f"><span>Motivo *</span><textarea class="in" rows="3" data-d="reason">${esc(w.dr.reason ?? "Depende de levantamento de campo da equipe de obras.")}</textarea></label><div style="font-size:13px;color:#6b7383">O prazo continua ${fdate(d.due)}. O tempo em ${SEC[d.sec].n} é registrado no percurso.</div>`; ok = '<button class="abtn pri" data-do="encaminhar">Encaminhar</button>'; }
+  if (w.f === "devolver") { title = "Devolver ao responsável"; body = `<div class="notice" style="margin:0;background:#e9eefa;color:#1f2a5c">A demanda volta para ${esc(P[d.resBy].n)} como pendente. O prazo continua o mesmo.</div><label class="f"><span>O que ainda falta? *</span><textarea class="in" rows="3" data-d="back">${esc(w.dr.back ?? "Faltou separar as reclamações por tipo.")}</textarea></label>`; ok = '<button class="abtn pri" data-do="devolver">Devolver</button>'; }
+  if (w.f === "prazo") { title = "Alterar prazo"; body = `<label class="f"><span>Novo prazo *</span><select data-d="ndays">${[1, 2, 3, 5, 7, 10].map((n) => `<option value="${n}">${fdate(dayOf(S.h) + n)}</option>`).join("")}</select></label><label class="f"><span>Justificativa *</span><textarea class="in" rows="2" data-d="why">${esc(w.dr.why ?? "Comitê adiado para a semana que vem.")}</textarea></label>`; ok = '<button class="abtn pri" data-do="prazo">Alterar prazo</button>'; }
+  if (w.f === "cancelar") { title = "Cancelar demanda"; body = `<div class="notice" style="margin:0;background:#eef0f4;color:#3e4657">A demanda não é excluída; fica registrada como cancelada.</div><label class="f"><span>Justificativa *</span><textarea class="in" rows="2" data-d="cwhy">${esc(w.dr.cwhy ?? "Pedido duplicado.")}</textarea></label>`; ok = '<button class="abtn" style="background:#b3261e;border-color:#b3261e;color:#fff" data-do="cancelar">Cancelar demanda</button>'; }
+  if (w.f === "percurso") { title = "Percurso nos setores"; const end = (p) => p.b ?? (d.st === "aberta" ? S.h : p.a);
+    body = d.per.map((p, i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #eceef2">${secChip(p.s)}<span style="font-size:13px;color:#6b7383">entrada ${fdt(p.a)}${p.late ? " · chegou vencida" : ""}</span><b>${dur(end(p) - p.a)}</b></div>`).join("") + '<div style="font-size:13px;color:#6b7383">Tempo corrido. Encaminhar não muda o prazo.</div>'; ok = ""; }
+  return `<div class="mback"><div class="modal"><div class="mh">${title}</div><div class="mb">${body}</div><div class="mf"><button class="abtn" data-cancel>${ok ? "Voltar" : "Fechar"}</button>${ok}</div></div></div>`;
+}
+function renderWin(i) {
+  const w = W[i], me = w.p, el = $("w" + i);
+  const route = w.v === "detalhe" ? `demandas/${w.cur}` : w.v;
+  const main = w.v === "inicio" ? viewInicio(me) : w.v === "acompanhamento" ? viewAcomp(me, w) : w.v === "cadastro" ? viewCadastro(me, w) : viewDetalhe(me, w);
+  const att = S.att[me] || 0;
+  const nav = (v, tone, ic, label, extra = "") => `<button class="a-nav ${w.v === v || (v === "acompanhamento" && w.v === "detalhe") ? "on" : ""}" data-go="${v}" title="${label}"><span class="ic ${tone}">${ICON[ic]}</span>${extra}</button>`;
+  el.innerHTML = `<div class="chrome"><i></i><i></i><i></i><span class="url">lucascruz.github.io/Painel-de-Demandas/#/${route}</span>
+    <select data-who aria-label="Pessoa nesta janela">${Object.entries(P).map(([k, p]) => `<option value="${k}" ${k === me ? "selected" : ""}>${p.n} · ${SEC[p.s].n}</option>`).join("")}</select></div>
+    <div class="appwrap"><div class="app"><div class="a-top"><span class="org">EQTL PI</span><span class="sep"></span><span class="sys">Painel de Demandas - EQTL PI SUL</span><span class="grow"></span>${ICON.sound}<span class="pill">${P[me].r === "Gerente" ? "Gerente" : "Colaborador"}</span><span class="av">${ini(P[me].n)}</span><span class="uname">${first(P[me].n)} ▾</span></div>
+    <div class="a-body"><nav class="a-side">${nav("inicio", "t-home", "home", "Início", att ? `<span class="cnt">${att}</span>` : "")}${nav("acompanhamento", "t-track", "track", "Acompanhamento")}${nav("cadastro", "t-new", "plus", "Cadastro")}${P[me].r === "Gerente" ? nav("gestao", "t-mgmt", "chart", "Gestão") : ""}</nav>
+    <main class="a-main">${main}</main></div>${modal(me, w)}${w.toast ? `<div class="toast">${esc(w.toast)}</div>` : ""}</div></div>`;
+  const sc = (el.clientWidth || 739) / 1080; el.style.setProperty("--sc", sc); el.style.setProperty("--ah", Math.floor((el.clientHeight - 34) / sc) + "px"); el.scrollLeft = 0; el.scrollTop = 0;
+  if (w.toast) { const t = w.toast; setTimeout(() => { if (W[i].toast === t) { W[i].toast = null; const n = el.querySelector(".toast"); if (n) n.remove(); } }, 2200); }
+  if (w.v === "detalhe" && w.scroll) { const m = el.querySelector(".chat-msgs"); if (m) m.scrollTop = m.scrollHeight; w.scroll = false; }
+}
+function renderAll() {
+  $("clk").textContent = clockTxt(S.h);
+  W.forEach((_, i) => renderWin(i));
+  const lab = { now: ["c-now", "E-mail"], late: ["c-late", "Cobrança"], dig: ["c-dig", "Resumo 8h"], app: ["c-app", "No painel"] };
+  $("tick").innerHTML = S.log.slice(0, 3).map((l) => `<div><span class="chip ${lab[l.kind][0]}">${lab[l.kind][1]}</span><span>${esc(l.text)}</span><small>${clockTxt(l.h)}</small></div>`).join("") || '<div style="color:#98a2b3">Nenhum aviso ainda. Roteiro: na janela do José, abra o relatório (a Ana vê ✓✓), converse, encaminhe ou conclua; na da Ana, confirme ou devolva.</div>';
+}
+[0, 1].forEach((i) => {
+  const el = $("w" + i);
+  el.addEventListener("input", (e) => { const k = e.target.dataset.d; if (k) W[i].dr[k] = e.target.value; });
+  el.addEventListener("change", (e) => {
+    const w = W[i];
+    if (e.target.dataset.who !== undefined) { w.p = e.target.value; w.v = "inicio"; w.f = null; w.dr = {}; w.menu = false; renderAll(); return; }
+    const k = e.target.dataset.d; if (!k) return; w.dr[k] = e.target.value;
+    if (k === "sec") { delete w.dr.who; renderAll(); } if (k === "fsec") { delete w.dr.fwho; renderAll(); }
   });
-  el.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.dataset.d==='msg'){ e.preventDefault(); el.querySelector('[data-send]').click(); }});
-  el.addEventListener('click',e=>{
-    const w=W[i], me=w.p, t=e.target.closest('button'); if(!t) return;
-    const d=w.cur?D(w.cur):null;
-    if(t.dataset.bell!==undefined){ w.bellOpen=!w.bellOpen; S.bell[me].forEach(b=>b.read=true); renderAll(); return; }
-    if(t.dataset.open){ const od=D(+t.dataset.open); if(od.who===me&&od.seenAt==null) od.seenAt=S.h; w.v='det'; w.cur=+t.dataset.open; w.f=null; w.dr={}; w.scroll=true; S.focus=w.cur; renderAll(); return; }
-    if(t.dataset.new!==undefined){ w.v='new'; w.dr={}; renderAll(); return; }
-    if(t.dataset.back!==undefined){ w.v='list'; w.f=null; renderAll(); return; }
-    if(t.dataset.cancel!==undefined){ w.f=null; renderAll(); return; }
-    if(t.dataset.f){ w.f=t.dataset.f; renderAll(); return; }
-    if(t.dataset.save!==undefined){ const dr=w.dr; step();
-      const nd=create(me,(dr.title??'Levantamento de postes da Rua Piauí').trim()||'Nova demanda',dr.ped??'Levantar a situação dos postes citados na reclamação da ouvidoria e informar prazo de reparo.',dr.src??'Ouvidoria',dr.sec||'STC',dr.who||null,+(dr.days??2));
-      w.v='det'; w.cur=nd.id; w.dr={}; w.scroll=true; renderAll(); return; }
-    if(t.dataset.send!==undefined&&d){ const txt=(w.dr.msg||'').trim(); if(!txt) return; step(); msg(me,d,txt); w.dr.msg=''; w.scroll=true; renderAll(); return; }
-    if(t.dataset.confirm!==undefined&&d){ step(); confirmIt(me,d); w.scroll=true; renderAll(); return; }
-    if(t.dataset.do&&d){ step();
-      if(t.dataset.do==='concluir') conclude(me,d,(w.dr.sol??'Relatório anexado na conversa, separado por base.').trim()||'Feito.');
-      if(t.dataset.do==='encaminhar'){ const fs=w.dr.fsec||(d.sec==='OBR'?'STC':'OBR'); forward(me,d,fs,w.dr.fwho||null,(w.dr.reason??'Depende de levantamento de campo da equipe de obras.').trim()||'Sem motivo informado.'); }
-      if(t.dataset.do==='devolver') sendBack(me,d,(w.dr.back??'Faltou separar as reclamações por tipo.').trim()||'Faltou algo.');
-      w.f=null; w.dr={}; w.scroll=true; S.focus=d.id; renderAll(); }
+  el.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && e.target.dataset.d === "msg") { e.preventDefault(); el.querySelector("[data-send]").click(); } });
+  el.addEventListener("click", (e) => {
+    const w = W[i], me = w.p;
+    const t = e.target.closest("[data-open],[data-go],[data-q],[data-qf],[data-f],[data-do],[data-act],[data-cancel],[data-save],[data-send],[data-menu]");
+    if (!t) { if (w.menu) { w.menu = false; renderAll(); } return; }
+    const d = w.cur ? D(w.cur) : null;
+    if (t.dataset.open) { const od = D(+t.dataset.open); if (od.who === me && od.seenAt == null) od.seenAt = S.h; S.att[me] = 0; w.v = "detalhe"; w.cur = od.id; w.f = null; w.dr = {}; w.menu = false; w.scroll = true; renderAll(); return; }
+    if (t.dataset.go) { if (t.dataset.go === "gestao") { w.toast = "Na demonstração: Início, Acompanhamento e Cadastro."; renderAll(); return; } if (t.dataset.go === "inicio") S.att[me] = 0; w.v = t.dataset.go; w.f = null; w.menu = false; w.dr = {}; renderAll(); return; }
+    if (t.dataset.q) { w.v = "acompanhamento"; w.q = t.dataset.q; renderAll(); return; }
+    if (t.dataset.qf) { w.q = t.dataset.qf; renderAll(); return; }
+    if (t.dataset.menu !== undefined) { w.menu = !w.menu; renderAll(); return; }
+    if (t.dataset.f) { w.f = t.dataset.f; w.menu = false; renderAll(); return; }
+    if (t.dataset.cancel !== undefined) { w.f = null; renderAll(); return; }
+    if (t.dataset.save !== undefined) {
+      const dr = w.dr; step();
+      const nd = mk(me, (dr.title ?? "Levantamento de postes da Rua Piauí").trim() || "Nova demanda", dr.ped ?? "Levantar a situação dos postes citados na reclamação da ouvidoria e informar o prazo de reparo.", dr.src ?? "Ouvidoria", dr.sec || (P[me].s === "STC" ? "OBR" : "STC"), dr.who || null, +(dr.days ?? 3), dr.prio || "normal");
+      w.v = "detalhe"; w.cur = nd.id; w.dr = {}; w.toast = "Demanda cadastrada."; w.scroll = true; renderAll(); return;
+    }
+    if (t.dataset.send !== undefined && d) { const txt = (w.dr.msg || "").trim(); if (!txt) return; step(); msg(me, d, txt); w.dr.msg = ""; w.scroll = true; renderAll(); return; }
+    if (t.dataset.act === "confirm" && d) { step(); confirmIt(me, d); w.toast = "Conclusão confirmada."; w.scroll = true; renderAll(); return; }
+    if (t.dataset.do && d) {
+      step();
+      if (t.dataset.do === "concluir") { conclude(me, d, (w.dr.sol ?? "Relatório anexado na conversa, separado por base.").trim() || "Feito."); w.toast = d.st === "conf" ? "Concluída. Aguardando confirmação de quem criou." : "Demanda concluída."; }
+      if (t.dataset.do === "encaminhar") { forward(me, d, w.dr.fsec || (d.sec === "OBR" ? "STC" : "OBR"), w.dr.fwho || null, (w.dr.reason ?? "Depende de levantamento de campo da equipe de obras.").trim() || "Sem motivo."); w.toast = "Demanda encaminhada."; }
+      if (t.dataset.do === "devolver") sendBack(me, d, (w.dr.back ?? "Faltou separar as reclamações por tipo.").trim() || "Faltou algo.");
+      if (t.dataset.do === "prazo") changeDue(me, d, +(w.dr.ndays || 1), (w.dr.why ?? "Comitê adiado para a semana que vem.").trim());
+      if (t.dataset.do === "cancelar") cancelIt(me, d, (w.dr.cwhy ?? "Pedido duplicado.").trim());
+      w.f = null; w.dr = {}; w.scroll = true; renderAll();
+    }
   });
 });
-$('adv').onclick=advance;
-$('rst').onclick=()=>{seed();renderAll();};
+$("adv").onclick = advance;
+$("rst").onclick = () => { seed(); renderAll(); };
 seed(); renderAll();
 </script>
+
+</body>
+</html>

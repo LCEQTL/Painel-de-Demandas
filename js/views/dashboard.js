@@ -63,6 +63,19 @@ export async function dashboardPage(main) {
   await load();
 }
 
+// Prazo por etapa: % cumprido por setor (só etapas com prazo próprio).
+function stagesPanel(d) {
+  const rows = d.sectors.filter((x) => x.stages).sort((a, b) => a.stages_ok / a.stages - b.stages_ok / b.stages);
+  return h("div", { class: "panel pad" }, h("div", { class: "panel-title" }, "Prazos de etapa cumpridos por setor"),
+    h("div", { class: "small muted", style: { marginBottom: "6px" } }, d.definitions.etapas),
+    rows.length ? h("div", { class: "bars" }, rows.map((x) => {
+      const pct = Math.round((100 * x.stages_ok) / x.stages);
+      return h("div", { class: "bar-row" }, h("span", { class: "lbl", title: x.sector.name }, x.sector.name),
+        h("div", { class: "track" }, h("div", { class: "fill " + (pct >= 80 ? "ok" : pct >= 50 ? "mid" : "bad"), style: { width: `${Math.max(2, pct)}%` } })),
+        h("span", { title: `${x.stages_ok} de ${x.stages} etapas` }, `${pct}% · ${x.stages_ok}/${x.stages}`));
+    })) : empty("Nenhuma etapa com prazo próprio no período. O prazo da etapa é definido ao encaminhar."));
+}
+
 function kpi(label, value, desc, cls, onClick) {
   return h("button", { class: "panel kpi", type: "button", onclick: onClick, title: "Ver a lista" }, h("div", { class: "k" }, label), h("div", { class: "v " + (cls || "") }, value ?? "—"), desc ? h("div", { class: "d" }, desc) : null);
 }
@@ -97,6 +110,8 @@ function overview(d, open) {
           h("thead", null, h("tr", null, h("th", null, "Setor"), h("th", null, "Passagens"), h("th", null, "Média"), h("th", null, "Mediana"), h("th", null, "Total"), h("th", null, "Chegaram vencidas"))),
           h("tbody", null, d.sectors.map((x) => h("tr", null, h("td", null, x.sector.name), h("td", null, x.periods), h("td", null, `${x.mean_days} d`), h("td", null, `${x.median_days} d`), h("td", null, `${x.total_days} d`),
             h("td", null, x.arrived_overdue ? h("button", { class: "btn sm", onclick: () => open("chegaram_vencidas", { sector_id: x.sector.id, sectorName: x.sector.name }) }, x.arrived_overdue) : "0")))))) : null),
+      stagesPanel(d)),
+    h("div", { class: "split" },
       h("details", { class: "panel pad small" }, h("summary", { style: { cursor: "pointer", fontWeight: 600 } }, "Como os números são calculados"),
         Object.values(d.definitions).map((t) => h("p", { style: { margin: "8px 0 0" } }, t)))));
 }
